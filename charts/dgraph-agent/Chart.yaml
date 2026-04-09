@@ -1,0 +1,10 @@
+apiVersion: v2
+name: dgraph-agent
+description: dgraph.ai on-premises scanner agent — indexes local/SMB/S3 filesystems
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - scanner
+  - agent
+  - on-premises

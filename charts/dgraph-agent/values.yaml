@@ -1,0 +1,119 @@
+# dgraph-agent Helm Chart
+# Deploy one agent per on-premises location / network segment.
+
+image:
+  repository: ghcr.io/gaineyllc/dgraph-agent
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# ── Required configuration ─────────────────────────────────────────────────────
+config:
+  tenantId:    ""      # Your dgraph.ai tenant ID
+  agentName:   ""      # Human-readable name (e.g. "NYC-Office-NAS")
+  apiEndpoint: "https://api.dgraph.ai"
+  syncInterval: "5m"
+  logLevel: "info"
+
+  # Secret scanning (runs locally — content never leaves)
+  enableSecretScan: true
+  enablePiiScan:    true
+  enableBinaryScan: false
+
+  # Air-gapped mode (no outbound connection required)
+  airGapped: false
+
+# ── Credentials (use existingSecret in production) ────────────────────────────
+credentials:
+  # Option 1: direct values (not recommended for production)
+  apiKey: ""
+
+  # Option 2: reference an existing Kubernetes secret (recommended)
+  existingSecret: ""          # secret name
+  apiKeySecretKey: "api-key"  # key within the secret
+
+# ── Connectors ─────────────────────────────────────────────────────────────────
+# Each entry mounts a connector configuration.
+connectors:
+  []
+  # Example SMB connector:
+  # - id: nas-media
+  #   type: smb
+  #   name: "Media NAS"
+  #   enabled: true
+  #   settings:
+  #     host: "192.168.1.10"
+  #     share: "Media"
+  #     username: "scanner"
+  #     password: ""       # use existingSecret instead
+  #
+  # Example local path:
+  # - id: local-docs
+  #   type: local
+  #   name: "Local Documents"
+  #   enabled: true
+  #   settings:
+  #     path: "/mnt/docs"
+
+# ── SMB credential secrets ─────────────────────────────────────────────────────
+# Reference existing secrets for SMB passwords, S3 keys, etc.
+connectorSecrets: []
+  # - name: nas-creds
+  #   secretName: nas-smb-credentials
+
+# ── Resources ──────────────────────────────────────────────────────────────────
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "2"
+    memory: "1Gi"
+
+# ── Persistence (offline queue) ────────────────────────────────────────────────
+persistence:
+  enabled: true
+  storageClass: ""
+  size: 5Gi
+  mountPath: /var/lib/dgraph-agent
+
+# ── Security ───────────────────────────────────────────────────────────────────
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534   # nobody
+  fsGroup: 65534
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false  # needs write for queue DB
+  capabilities:
+    drop: ["ALL"]
+
+# ── Health probes ──────────────────────────────────────────────────────────────
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 9090
+    host: 127.0.0.1
+  initialDelaySeconds: 10
+  periodSeconds: 30
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 9090
+    host: 127.0.0.1
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+# ── Deployment strategy ────────────────────────────────────────────────────────
+# Use Recreate to prevent two agents scanning the same source simultaneously
+strategy:
+  type: Recreate
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+serviceAccount:
+  create: true
+  annotations: {}

@@ -1,0 +1,30 @@
+apiVersion: v2
+name: dgraphai
+description: dgraph.ai — Enterprise Filesystem Knowledge Graph Platform
+type: application
+version: 0.1.0
+appVersion: "0.2.0"
+keywords:
+  - graph
+  - security
+  - data-inventory
+  - ai
+home: https://dgraph.ai
+sources:
+  - https://github.com/gaineyllc/dgraphai
+maintainers:
+  - name: dgraph.ai
+    email: support@dgraph.ai
+dependencies:
+  - name: neo4j
+    version: "5.x.x"
+    repository: "https://helm.neo4j.com/neo4j"
+    condition: neo4j.enabled
+  - name: redis
+    version: "19.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: postgresql
+    version: "15.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled

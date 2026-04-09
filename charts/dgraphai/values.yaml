@@ -1,0 +1,205 @@
+# dgraph.ai Helm Chart — default values
+# Override per-environment in values-prod.yaml, values-staging.yaml, etc.
+
+# ── Image ──────────────────────────────────────────────────────────────────────
+image:
+  repository: ghcr.io/gaineyllc/dgraphai
+  tag: ""          # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# ── Replicas ───────────────────────────────────────────────────────────────────
+replicaCount: 2
+
+# ── API server ─────────────────────────────────────────────────────────────────
+api:
+  port: 8000
+  resources:
+    requests: { cpu: "250m", memory: "512Mi" }
+    limits:   { cpu: "2",    memory: "2Gi"   }
+  env:
+    # Required — set via --set or values override
+    JWT_SECRET: ""             # generate: openssl rand -hex 32
+    ENCRYPTION_KEY: ""         # AES-256 key: openssl rand -base64 32
+    APP_URL: "https://app.dgraph.ai"
+    DGRAPHAI_ENABLE_DOCS: "false"
+    # Celery / Redis
+    CELERY_BROKER_URL: "redis://{{ .Release.Name }}-redis-master:6379/0"
+    CELERY_RESULT_URL: "redis://{{ .Release.Name }}-redis-master:6379/1"
+    # SMTP (optional)
+    SMTP_HOST: ""
+    SMTP_PORT: "587"
+    SMTP_FROM: "noreply@dgraph.ai"
+    # Observability
+    OTLP_ENDPOINT: ""          # e.g. http://jaeger:4317
+
+# ── Celery workers ─────────────────────────────────────────────────────────────
+celery:
+  enabled: true
+  workers:
+    default:
+      replicas: 2
+      queues: "default,alerts"
+      resources:
+        requests: { cpu: "250m", memory: "512Mi" }
+        limits:   { cpu: "2",    memory: "2Gi"   }
+    indexing:
+      replicas: 1
+      queues: "indexing"
+      concurrency: 4
+      resources:
+        requests: { cpu: "500m", memory: "1Gi" }
+        limits:   { cpu: "4",    memory: "8Gi" }
+    enrichment:
+      replicas: 1
+      queues: "enrichment"
+      concurrency: 2
+      resources:
+        requests: { cpu: "2",  memory: "4Gi"  }
+        limits:   { cpu: "8",  memory: "16Gi" }
+    gdpr:
+      replicas: 1
+      queues: "gdpr"
+  beat:
+    enabled: true
+
+# ── Ingress ────────────────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+  hosts:
+    - host: app.dgraph.ai
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: dgraphai-tls
+      hosts:
+        - app.dgraph.ai
+
+# ── Service ────────────────────────────────────────────────────────────────────
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+# ── Autoscaling ────────────────────────────────────────────────────────────────
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# ── Persistence ────────────────────────────────────────────────────────────────
+persistence:
+  enabled: true
+  storageClass: ""
+  size: 10Gi
+
+# ── Secrets (use sealed-secrets or external-secrets in production) ─────────────
+secrets:
+  # All values base64-encoded if using Kubernetes secrets directly
+  # Prefer: external-secrets operator pointing to AWS Secrets Manager / Vault
+  existingSecret: ""    # use existing secret instead of creating one
+
+# ── PostgreSQL ─────────────────────────────────────────────────────────────────
+postgresql:
+  enabled: true
+  auth:
+    username: dgraphai
+    password: ""        # required — set via --set postgresql.auth.password=...
+    database: dgraphai
+  primary:
+    persistence:
+      size: 20Gi
+    resources:
+      requests: { cpu: "500m", memory: "1Gi" }
+      limits:   { cpu: "2",    memory: "4Gi" }
+
+# ── Neo4j ──────────────────────────────────────────────────────────────────────
+neo4j:
+  enabled: true
+  neo4j:
+    name: dgraphai
+    password: ""        # required — set via --set neo4j.neo4j.password=...
+  volumes:
+    data:
+      requests:
+        storage: 100Gi
+  resources:
+    requests: { cpu: "1",  memory: "2Gi"  }
+    limits:   { cpu: "4",  memory: "8Gi"  }
+
+# ── Redis ──────────────────────────────────────────────────────────────────────
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      size: 8Gi
+    resources:
+      requests: { cpu: "100m", memory: "128Mi" }
+      limits:   { cpu: "500m", memory: "512Mi" }
+
+# ── ServiceAccount ─────────────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# ── Pod security ───────────────────────────────────────────────────────────────
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+# ── Pod disruption budget ──────────────────────────────────────────────────────
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# ── Network policy ─────────────────────────────────────────────────────────────
+networkPolicy:
+  enabled: true
+  # Only allow inbound from ingress controller + prometheus scraper
+  ingressRules:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+
+# ── Monitoring ─────────────────────────────────────────────────────────────────
+monitoring:
+  serviceMonitor:
+    enabled: false    # enable if prometheus-operator is installed
+    interval: 30s
+    scrapeTimeout: 10s
+
+# ── Node placement ─────────────────────────────────────────────────────────────
+nodeSelector: {}
+tolerations: []
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - dgraphai
+          topologyKey: kubernetes.io/hostname

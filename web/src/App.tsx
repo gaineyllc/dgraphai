@@ -11,6 +11,9 @@ import { ConnectorsPage }   from './pages/ConnectorsPage'
 import { InventoryPage }    from './pages/InventoryPage'
 import { QueryBuilder }     from './pages/QueryBuilder'
 import { UsagePage }       from './pages/UsagePage'
+import { LoginPage }       from './pages/auth/LoginPage'
+import { SignupPage }      from './pages/auth/SignupPage'
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage'
 import { useQuery } from '@tanstack/react-query'
 import { graphApi } from './lib/api'
 import { Terminal, Shield, Activity, Settings } from 'lucide-react'
@@ -39,6 +42,9 @@ function AppShell() {
           <Route path="/inventory"  element={<InventoryPage />} />
           <Route path="/builder"    element={<QueryBuilder />} />
           <Route path="/usage"      element={<UsagePage />} />
+          <Route path="/login"     element={<LoginPage />} />
+          <Route path="/signup"    element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/query"    element={<QueryWorkspace />} />
           <Route path="/security" element={<SecurityPage />} />
           <Route path="/workflows" element={<WorkflowBuilderPage />} />
