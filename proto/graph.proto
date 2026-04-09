@@ -1,0 +1,73 @@
+syntax = "proto3";
+package dgraphai.graph.v1;
+option go_package = "github.com/gaineyllc/dgraphai/proto/graph/v1";
+
+// GraphService — cloud-abstracted graph operations.
+// Allows the Go control plane to query/write graphs without knowing
+// whether the backend is Neo4j, Neptune, CosmosDB, or SQLite.
+service GraphService {
+  rpc Query(QueryRequest)   returns (QueryResponse);
+  rpc Upsert(UpsertRequest) returns (UpsertResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc HealthCheck(GraphHealthRequest) returns (GraphHealthResponse);
+}
+
+message QueryRequest {
+  string tenant_id = 1;
+  string cypher    = 2;  // Standard Cypher — translated per backend
+  map<string, string> params = 3;
+  int32  limit     = 4;
+  int32  skip      = 5;
+}
+
+message QueryResponse {
+  repeated bytes rows = 1;  // JSON-encoded rows
+  int32  total   = 2;
+  int64  duration_ms = 3;
+  string backend = 4;
+}
+
+message Node {
+  string id     = 1;
+  repeated string labels = 2;
+  bytes  props  = 3;  // JSON-encoded properties
+}
+
+message Edge {
+  string id       = 1;
+  string type     = 2;
+  string from_id  = 3;
+  string to_id    = 4;
+  bytes  props    = 5;
+}
+
+message UpsertRequest {
+  string tenant_id   = 1;
+  repeated Node nodes = 2;
+  repeated Edge edges = 3;
+  bool   merge       = 4;  // true = MERGE, false = CREATE
+}
+
+message UpsertResponse {
+  int32 nodes_created  = 1;
+  int32 nodes_updated  = 2;
+  int32 edges_created  = 3;
+}
+
+message DeleteRequest {
+  string tenant_id  = 1;
+  repeated string node_ids = 2;
+  bool   detach    = 3;
+}
+
+message DeleteResponse {
+  int32 deleted = 1;
+}
+
+message GraphHealthRequest {}
+message GraphHealthResponse {
+  string status  = 1;
+  string backend = 2;
+  int64  node_count = 3;
+  int64  edge_count = 4;
+}

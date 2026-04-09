@@ -1,0 +1,83 @@
+# dgraph.ai — GCP deployment values
+# GKE Autopilot + managed services
+
+cloud:
+  provider: gcp
+  region:   us-central1
+
+postgresql:
+  enabled: false
+
+externalPostgresql:
+  enabled:  true
+  host:     "10.x.x.x"   # Cloud SQL private IP via Cloud SQL Auth Proxy
+  port:     5432
+  database: dgraphai
+  username: dgraphai
+  existingSecret: "dgraphai-cloudsql-secret"
+  cloudSQLProxy:
+    enabled:    true
+    instance:   "PROJECT:REGION:dgraphai-db"
+    serviceAccount: "dgraphai-sa@PROJECT.iam.gserviceaccount.com"
+
+neo4j:
+  enabled: false
+
+externalNeo4j:
+  enabled: true
+  uri:     "neo4j+s://xxxx.databases.neo4j.io"
+  existingSecret: "dgraphai-neo4j-secret"
+
+redis:
+  enabled: false
+
+externalRedis:
+  enabled: true
+  host:    "10.x.x.x"   # Memorystore private IP
+  port:    6379
+  tls:     false   # Memorystore Basic doesn't require TLS internally
+
+objectStorage:
+  provider:   gcs
+  bucket:     dgraphai-data-PROJECT
+  # Use Workload Identity — no static service account keys
+  useWorkloadIdentity: true
+
+search:
+  provider: opensearch
+  endpoint: "https://dgraphai-search.run.app"
+
+ingress:
+  className: gce
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: dgraphai-ip
+    networking.gke.io/managed-certificates: dgraphai-cert
+    networking.gke.io/v1beta1.FrontendConfig: dgraphai-frontend-config
+
+serviceAccount:
+  annotations:
+    iam.gke.io/gcp-service-account: "dgraphai-sa@PROJECT.iam.gserviceaccount.com"
+
+externalSecrets:
+  enabled:         true
+  secretStoreName: gcp-secret-manager
+  projectID:       "PROJECT_ID"
+  refreshInterval: 1h
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+  googleCloud:
+    enabled: true
+    projectID: "PROJECT_ID"
+
+celery:
+  workers:
+    enrichment:
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-t4
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: Exists
+          effect: NoSchedule

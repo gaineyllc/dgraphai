@@ -1,0 +1,104 @@
+# dgraph.ai — Air-gapped deployment values
+# Zero outbound internet. All images pre-loaded into local registry.
+# All AI models pre-bundled. Offline license validation only.
+
+cloud:
+  provider: airgapped
+  localRegistry: "registry.internal:5000"   # private registry
+
+# Pull all images from local registry
+image:
+  repository: "registry.internal:5000/dgraphai/dgraphai"
+  pullPolicy: IfNotPresent
+
+# Override all sub-chart images to local registry
+global:
+  imageRegistry: "registry.internal:5000"
+
+# All services in-cluster
+postgresql:
+  enabled: true
+  image:
+    registry: registry.internal:5000
+  auth:
+    password: ""   # required
+
+neo4j:
+  enabled: true
+  image:
+    customImage: registry.internal:5000/neo4j/neo4j-enterprise:5.x
+  neo4j:
+    password: ""   # required
+  neo4jLicenseSecret: neo4j-enterprise-license
+
+redis:
+  enabled: true
+  image:
+    registry: registry.internal:5000
+
+objectStorage:
+  provider: minio
+  endpoint: "http://minio:9000"
+  bucket:   dgraphai-data
+
+minio:
+  enabled: true
+  image:
+    registry: registry.internal:5000
+
+search:
+  provider:  meilisearch
+  inCluster: true
+
+meilisearch:
+  enabled: true
+  image:
+    registry: registry.internal:5000
+
+# Disable all external service integrations
+externalSecrets:
+  enabled: false
+monitoring:
+  googleCloud:  { enabled: false }
+  cloudwatch:   { enabled: false }
+  azureMonitor: { enabled: false }
+
+# Air-gapped specific settings
+airgapped:
+  enabled: true
+
+  # Local Ollama with pre-loaded models
+  ollama:
+    enabled:   true
+    image:     registry.internal:5000/ollama/ollama:latest
+    models:
+      - llama3.2          # summarization, entity extraction
+      - qwen2.5-coder:32b  # code analysis
+      - llava              # vision analysis
+      - deepseek-r1:32b    # binary risk assessment
+    gpuEnabled: false   # set true if GPU available
+
+  # License validation — hardware fingerprint only, no phone-home
+  license:
+    mode:          hardware   # hardware | file
+    licenseSecret: dgraphai-license
+
+  # No outbound connections
+  network:
+    disableEgressByDefault: true
+    allowedEgress: []   # empty = no outbound
+
+  # Pre-loaded Meilisearch index (from bundle)
+  searchIndexBundle: "/data/search-index-snapshot.tar"
+
+ingress:
+  className: nginx
+  tls:
+    - secretName: dgraphai-tls-selfsigned
+      hosts:
+        - dgraph.internal
+
+# Celery — no external queues
+celery:
+  broker: "redis://dgraphai-redis-master:6379/0"
+  result: "redis://dgraphai-redis-master:6379/1"

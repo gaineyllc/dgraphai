@@ -1,0 +1,104 @@
+# dgraph.ai — AWS deployment values
+# Overrides charts/dgraphai/values.yaml for AWS EKS + managed services
+
+# ── AWS-specific settings ──────────────────────────────────────────────────────
+cloud:
+  provider: aws
+  region:   us-east-1
+
+# ── PostgreSQL → RDS Aurora Serverless v2 ─────────────────────────────────────
+postgresql:
+  enabled: false  # Use external RDS
+
+externalPostgresql:
+  enabled:  true
+  host:     "dgraphai.cluster-xxxx.us-east-1.rds.amazonaws.com"
+  port:     5432
+  database: dgraphai
+  username: dgraphai
+  # password from AWS Secrets Manager via external-secrets operator
+  existingSecret: "dgraphai-rds-secret"
+  passwordKey:    "password"
+  sslMode:        require
+
+# ── Neo4j → Neo4j Aura Enterprise or self-managed EC2 ─────────────────────────
+neo4j:
+  enabled: false  # Use external
+
+externalNeo4j:
+  enabled: true
+  uri:     "neo4j+s://xxxx.databases.neo4j.io"
+  existingSecret: "dgraphai-neo4j-secret"
+
+# ── Redis → ElastiCache (cluster mode disabled for Celery compatibility) ───────
+redis:
+  enabled: false
+
+externalRedis:
+  enabled: true
+  host:    "dgraphai.xxxx.use1.cache.amazonaws.com"
+  port:    6379
+  tls:     true
+  existingSecret: "dgraphai-redis-secret"
+
+# ── Object storage → S3 ────────────────────────────────────────────────────────
+objectStorage:
+  provider: s3
+  bucket:   dgraphai-data
+  region:   us-east-1
+  # Use IRSA (IAM Roles for Service Accounts) — no static credentials
+  useIRSA:  true
+
+# ── Search → OpenSearch Serverless ────────────────────────────────────────────
+search:
+  provider: opensearch
+  endpoint: "https://xxxx.us-east-1.aoss.amazonaws.com"
+  useIAMAuth: true
+
+# ── Ingress → AWS Load Balancer Controller ────────────────────────────────────
+ingress:
+  className: alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:xxx:certificate/xxx"
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    alb.ingress.kubernetes.io/wafv2-acl-arn: "arn:aws:wafv2:us-east-1:xxx:..."
+
+# ── Service account → IRSA ────────────────────────────────────────────────────
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/dgraphai-role"
+
+# ── Secrets → AWS Secrets Manager via external-secrets ────────────────────────
+externalSecrets:
+  enabled:          true
+  secretStoreName:  aws-secretsmanager
+  refreshInterval:  1h
+
+# ── Monitoring → CloudWatch + Managed Prometheus ──────────────────────────────
+monitoring:
+  serviceMonitor:
+    enabled: true
+  cloudwatch:
+    enabled:    true
+    region:     us-east-1
+    logGroup:   /dgraphai/production
+
+# ── Auto-scaling → KEDA with SQS metrics ──────────────────────────────────────
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 20
+
+# ── Spot instances for enrichment workers ─────────────────────────────────────
+celery:
+  workers:
+    enrichment:
+      nodeSelector:
+        node.kubernetes.io/instance-type: "g4dn.xlarge"
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: Exists
+          effect: NoSchedule

@@ -1,0 +1,97 @@
+# dgraph.ai — On-premises self-hosted values
+# Customer's own Kubernetes cluster, bring-your-own resources
+
+cloud:
+  provider: onprem
+
+# All services run in-cluster by default for on-prem
+postgresql:
+  enabled: true
+  auth:
+    username: dgraphai
+    password: ""   # required: --set postgresql.auth.password=CHANGE_ME
+    database: dgraphai
+  primary:
+    persistence:
+      storageClass: ""   # use cluster default
+      size: 50Gi
+    resources:
+      requests: { cpu: "500m", memory: "1Gi" }
+      limits:   { cpu: "4",    memory: "8Gi" }
+
+neo4j:
+  enabled: true
+  neo4j:
+    name: dgraphai
+    password: ""   # required
+  volumes:
+    data:
+      requests:
+        storage: 200Gi
+  resources:
+    requests: { cpu: "2", memory: "4Gi" }
+    limits:   { cpu: "8", memory: "32Gi" }
+  # Enterprise license for multi-instance and clustering
+  neo4jLicenseSecret: neo4j-enterprise-license
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    existingSecret: dgraphai-redis-auth
+
+objectStorage:
+  provider: minio   # MinIO is the on-prem S3-compatible store
+  endpoint:  "http://minio.minio.svc.cluster.local:9000"
+  bucket:    dgraphai-data
+  existingSecret: dgraphai-minio-secret
+
+search:
+  provider:  meilisearch
+  inCluster: true   # deploy Meilisearch in the same namespace
+
+ingress:
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Or use a self-signed cert for air-gapped:
+    # cert-manager.io/cluster-issuer: selfsigned-issuer
+
+# Optionally deploy MinIO in-cluster
+minio:
+  enabled: true
+  rootUser: dgraphai
+  rootPassword: ""   # required
+  persistence:
+    size: 500Gi
+
+# Optionally deploy Meilisearch in-cluster
+meilisearch:
+  enabled: true
+  environment:
+    MEILI_NO_ANALYTICS: "true"
+    MEILI_ENV: production
+  persistence:
+    size: 20Gi
+
+# No cloud secret manager — use Kubernetes secrets directly
+externalSecrets:
+  enabled: false
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+  # Deploy Prometheus + Grafana in-cluster
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true
+
+# Enrichment workers — optional GPU
+celery:
+  workers:
+    enrichment:
+      replicas: 1
+      # Set to 0 if no GPU available — AI enrichment disabled
+      # GPU enrichment is additive, not required

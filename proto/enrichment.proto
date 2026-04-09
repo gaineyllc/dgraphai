@@ -1,0 +1,120 @@
+syntax = "proto3";
+package dgraphai.enrichment.v1;
+option go_package = "github.com/gaineyllc/dgraphai/proto/enrichment/v1";
+
+// EnrichmentService — called by the Go control plane to enrich file metadata.
+// Python workers implement this service. No file content crosses the boundary
+// in SaaS mode; only file metadata and properties.
+service EnrichmentService {
+  // Enrich a document (PDF, Office, text) with LLM analysis
+  rpc EnrichDocument(EnrichDocumentRequest)   returns (EnrichDocumentResponse);
+  // Enrich an image with vision model analysis (LLaVA)
+  rpc EnrichImage(EnrichImageRequest)         returns (EnrichImageResponse);
+  // Enrich source code (qwen2.5-coder)
+  rpc EnrichCode(EnrichCodeRequest)           returns (EnrichCodeResponse);
+  // Enrich an executable binary (deepseek-r1 reasoning)
+  rpc EnrichBinary(EnrichBinaryRequest)       returns (EnrichBinaryResponse);
+  // Enrich audio metadata (tags, fingerprinting)
+  rpc EnrichAudio(EnrichAudioRequest)         returns (EnrichAudioResponse);
+  // Health check
+  rpc HealthCheck(HealthCheckRequest)         returns (HealthCheckResponse);
+}
+
+message EnrichDocumentRequest {
+  string tenant_id   = 1;
+  string node_id     = 2;
+  string text        = 3;  // extracted text (max 4000 tokens)
+  string file_path   = 4;
+  string file_category = 5;
+  string mime_type   = 6;
+}
+
+message EnrichDocumentResponse {
+  string summary       = 1;
+  string document_type = 2;
+  string sentiment     = 3;
+  string language      = 4;
+  repeated string topics        = 5;
+  repeated string people        = 6;
+  repeated string organizations = 7;
+  repeated string locations     = 8;
+  repeated string action_items  = 9;
+  bool   pii_detected  = 10;
+  string pii_types     = 11;
+  string sensitivity_level = 12;
+  bool   contains_secrets  = 13;
+  string secret_types      = 14;
+}
+
+message EnrichImageRequest {
+  string tenant_id  = 1;
+  string node_id    = 2;
+  bytes  image_data = 3;   // max 5MB, JPEG/PNG
+  string file_path  = 4;
+}
+
+message EnrichImageResponse {
+  string description     = 1;
+  string scene_type      = 2;
+  repeated string objects = 3;
+  int32  people_count    = 4;
+  string text_visible    = 5;
+  string mood            = 6;
+  repeated string dominant_colors = 7;
+  bool   is_document     = 8;
+  bool   pii_detected    = 9;
+}
+
+message EnrichCodeRequest {
+  string tenant_id   = 1;
+  string node_id     = 2;
+  string content     = 3;  // first 2000 lines
+  string file_path   = 4;
+  string language    = 5;
+}
+
+message EnrichCodeResponse {
+  string summary              = 1;
+  string framework            = 2;
+  string code_quality         = 3;
+  bool   has_tests            = 4;
+  repeated string security_concerns = 5;
+  repeated string topics      = 6;
+  bool   contains_secrets     = 7;
+  string secret_types         = 8;
+}
+
+message EnrichBinaryRequest {
+  string tenant_id = 1;
+  string node_id   = 2;
+  string file_path = 3;
+  map<string, string> metadata = 4;  // already-extracted binary metadata
+}
+
+message EnrichBinaryResponse {
+  string summary         = 1;
+  string risk_assessment = 2;
+  string ai_category     = 3;
+}
+
+message EnrichAudioRequest {
+  string tenant_id = 1;
+  string node_id   = 2;
+  string file_path = 3;
+  map<string, string> tags = 4;
+}
+
+message EnrichAudioResponse {
+  string acoustid      = 1;
+  string musicbrainz_id = 2;
+  float  bpm           = 3;
+  string mood          = 4;
+  string genre_ai      = 5;
+}
+
+message HealthCheckRequest {}
+message HealthCheckResponse {
+  string status  = 1;  // "ok" | "degraded"
+  string version = 2;
+  map<string, string> models = 3;  // model_name → status
+}

@@ -1,0 +1,73 @@
+syntax = "proto3";
+package dgraphai.ingest.v1;
+option go_package = "github.com/gaineyllc/dgraphai/proto/ingest/v1";
+
+// IngestService — high-throughput write path for scanner agents.
+// Implemented by dgraph-ingest (Go). Handles 10K+ concurrent agents.
+service IngestService {
+  // Ingest a batch of file metadata from a scanner agent
+  rpc IngestDelta(IngestDeltaRequest) returns (IngestDeltaResponse);
+  // Register or update agent health
+  rpc AgentHeartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  // Streaming variant for large batches
+  rpc IngestDeltaStream(stream FileRecord) returns (IngestDeltaResponse);
+}
+
+message FileRecord {
+  string connector_id   = 1;
+  string path           = 2;
+  string name           = 3;
+  string extension      = 4;
+  int64  size           = 5;
+  int64  modified_at    = 6;  // unix timestamp
+  string sha256         = 7;
+  string mime_type      = 8;
+  string file_category  = 9;
+  string protocol       = 10;
+  string host           = 11;
+  string share          = 12;
+  // Pre-computed local enrichment results (from dgraph-enricher/agent)
+  bool   contains_secrets = 20;
+  string secret_types     = 21;
+  bool   pii_detected     = 22;
+  string pii_types        = 23;
+  string sensitivity_level = 24;
+  map<string, string> attrs = 30;  // format-specific metadata
+}
+
+message IngestDeltaRequest {
+  string agent_id     = 1;
+  string tenant_id    = 2;
+  string connector_id = 3;
+  string scan_id      = 4;
+  int32  chunk_index  = 5;
+  repeated FileRecord files        = 6;
+  repeated string     deleted_paths = 7;
+  int64  timestamp    = 8;
+}
+
+message IngestDeltaResponse {
+  string scan_id     = 1;
+  int32  accepted    = 2;
+  int32  rejected    = 3;
+  repeated string errors = 4;
+  bool   queued_for_enrichment = 5;
+}
+
+message HeartbeatRequest {
+  string agent_id   = 1;
+  string tenant_id  = 2;
+  string version    = 3;
+  string os         = 4;
+  string arch       = 5;
+  int32  connector_count = 6;
+  bool   air_gapped = 7;
+  map<string, string> health = 8;
+}
+
+message HeartbeatResponse {
+  string status       = 1;  // "ok" | "update_available" | "deactivated"
+  string latest_version = 2;
+  bool   config_changed = 3;
+  bytes  new_config   = 4;  // JSON config delta if changed
+}

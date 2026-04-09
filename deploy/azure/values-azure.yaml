@@ -1,0 +1,81 @@
+# dgraph.ai — Azure deployment values
+# AKS + managed services
+
+cloud:
+  provider: azure
+  region:   eastus
+
+postgresql:
+  enabled: false
+
+externalPostgresql:
+  enabled:  true
+  host:     "dgraphai.postgres.database.azure.com"
+  port:     5432
+  database: dgraphai
+  username: "dgraphai@dgraphai"
+  existingSecret: "dgraphai-pgflex-secret"
+  sslMode:  require
+
+neo4j:
+  enabled: false
+
+externalNeo4j:
+  enabled: true
+  uri:     "neo4j+s://xxxx.databases.neo4j.io"
+  existingSecret: "dgraphai-neo4j-secret"
+
+redis:
+  enabled: false
+
+externalRedis:
+  enabled:  true
+  host:     "dgraphai.redis.cache.windows.net"
+  port:     6380
+  tls:      true
+  existingSecret: "dgraphai-redis-secret"
+
+objectStorage:
+  provider:       azureblob
+  containerName:  dgraphai-data
+  accountName:    dgraphaidata
+  # Use Managed Identity — no static keys
+  useManagedIdentity: true
+
+search:
+  provider: opensearch   # OpenSearch on AKS, or Azure Cognitive Search
+  endpoint: "https://dgraphai-search.eastus.azurecontainerapps.io"
+
+ingress:
+  className: azure-application-gateway
+  annotations:
+    kubernetes.io/ingress.class: azure/application-gateway
+    appgw.ingress.kubernetes.io/ssl-redirect: "true"
+    appgw.ingress.kubernetes.io/waf-policy-for-path: "/subscriptions/.../wafPolicy"
+
+serviceAccount:
+  annotations:
+    azure.workload.identity/client-id: "MANAGED_IDENTITY_CLIENT_ID"
+
+externalSecrets:
+  enabled:         true
+  secretStoreName: azure-keyvault
+  keyVaultName:    dgraphai-kv
+  refreshInterval: 1h
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+  azureMonitor:
+    enabled:   true
+    workspace: "/subscriptions/.../workspaces/dgraphai-logs"
+
+celery:
+  workers:
+    enrichment:
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: Exists
+          effect: NoSchedule

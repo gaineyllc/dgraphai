@@ -1,0 +1,33 @@
+{
+  "name": "@dgraphai/sdk",
+  "version": "0.1.0",
+  "description": "Official TypeScript/JavaScript SDK for dgraph.ai",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "test":  "vitest run",
+    "lint":  "eslint src/"
+  },
+  "keywords": ["dgraphai", "graph", "knowledge-graph", "security", "ai"],
+  "author": "dgraph.ai <sdk@dgraph.ai>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url":  "https://github.com/gaineyllc/dgraphai/tree/main/sdk/typescript"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "tsup":       "^8.0.0",
+    "vitest":     "^1.0.0"
+  },
+  "engines": { "node": ">=18" }
+}
