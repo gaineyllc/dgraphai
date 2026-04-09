@@ -166,3 +166,51 @@ jobs:
             ### Binary install (agent)
             Download the appropriate binary from the assets below.
             Verify signature: `cosign verify-blob dgraph-agent-linux-amd64 --bundle dgraph-agent-linux-amd64.bundle`
+
+  # -- Go tests
+  test-go:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.23' }
+      - name: Run Go tests
+        run: cd agent-go && go test ./internal/... -v -race
+
+  # -- Rust tests
+  test-rust:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: enricher-rs }
+      - name: Run Rust tests
+        run: cd enricher-rs && cargo test --release
+      - name: Clippy
+        run: cd enricher-rs && cargo clippy -- -D warnings
+
+  # -- Build Rust enricher
+  build-enricher:
+    runs-on: ubuntu-latest
+    needs: test-rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl,x86_64-pc-windows-gnu
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: enricher-rs }
+      - name: Build Linux musl
+        run: cd enricher-rs && rustup target add x86_64-unknown-linux-musl && sudo apt-get install -y musl-tools --no-install-recommends && cargo build --release --target x86_64-unknown-linux-musl
+      - name: Build Windows
+        run: cd enricher-rs && sudo apt-get install -y gcc-mingw-w64-x86-64 --no-install-recommends && rustup target add x86_64-pc-windows-gnu && cargo build --release --target x86_64-pc-windows-gnu
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dgraph-enricher-binaries
+          path: |
+            enricher-rs/target/x86_64-unknown-linux-musl/release/dgraph-enricher
+            enricher-rs/target/x86_64-pc-windows-gnu/release/dgraph-enricher.exe

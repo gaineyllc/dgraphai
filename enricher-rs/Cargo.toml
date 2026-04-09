@@ -1,0 +1,51 @@
+[package]
+name    = "dgraph-enricher"
+version = "0.1.0"
+edition = "2021"
+authors = ["dgraph.ai <support@dgraph.ai>"]
+description = "On-premises file content scanner — secrets, PII, binary analysis"
+license     = "MIT"
+
+# Build as a single static binary where possible
+[profile.release]
+opt-level = 3
+lto       = true
+codegen-units = 1
+panic     = "abort"   # smaller binary, no unwinding overhead
+strip     = true
+
+[[bin]]
+name = "dgraph-enricher"
+path = "src/main.rs"
+
+[dependencies]
+# Regex — uses RE2 semantics (linear time, no backtracking attacks)
+regex       = { version = "1.10", features = ["perf"] }
+
+# Serialization
+serde       = { version = "1", features = ["derive"] }
+serde_json  = "1"
+
+# CLI
+clap        = { version = "4", features = ["derive"] }
+
+# Error handling
+anyhow      = "1"
+
+# Entropy calculation (for packed binary detection)
+# Shannon entropy over byte frequencies
+# No external dep needed — implemented in-house
+
+# Binary format parsing (PE/ELF/Mach-O)
+object      = { version = "0.36", features = ["read"] }
+
+# Logging
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Async runtime (for streaming stdin)
+tokio       = { version = "1", features = ["rt", "io-std", "io-util", "macros"] }
+
+[dev-dependencies]
+# Test helpers
+tempfile = "3"

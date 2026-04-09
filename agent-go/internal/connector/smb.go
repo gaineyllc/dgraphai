@@ -131,17 +131,12 @@ func walkSMB(ctx context.Context, fs *smb2.Share, dir, share, host string, fn Wa
 			continue
 		}
 
-		info, err := entry.Info()
-		if err != nil {
-			continue
-		}
-
-		modTime := info.ModTime().UTC()
+		modTime := entry.ModTime().UTC()
 		fileInfo := FileInfo{
 			Path:       "/" + path,
 			Name:       entry.Name(),
 			Extension:  strings.ToLower(ext(entry.Name())),
-			Size:       info.Size(),
+			Size:       entry.Size(),
 			ModifiedAt: modTime,
 			IndexedAt:  time.Now().UTC(),
 			Protocol:   "smb",

@@ -1,0 +1,47 @@
+# goreleaser config for dgraph-enricher (Rust binary)
+# Uses cargo-zigbuild for cross-compilation without Docker
+project_name: dgraph-enricher
+version: 2
+
+before:
+  hooks:
+    - cargo test --release --quiet   # run tests before release
+    - cargo clippy -- -D warnings    # fail on warnings
+
+builds:
+  - id: dgraph-enricher
+    builder: rust
+    targets:
+      - x86_64-unknown-linux-musl     # Linux amd64 (static, no glibc dep)
+      - aarch64-unknown-linux-musl    # Linux arm64
+      - x86_64-pc-windows-gnu         # Windows amd64
+      - x86_64-apple-darwin           # macOS amd64
+      - aarch64-apple-darwin          # macOS Apple Silicon
+    flags:
+      - --release
+      - --locked
+    ldflags:
+      - -C link-arg=-s   # strip symbols
+
+archives:
+  - id: dgraph-enricher
+    name_template: "dgraph-enricher_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: "checksums.txt"
+
+signs:
+  - artifacts: checksum
+    cmd: cosign
+    args:
+      - sign-blob
+      - --output-certificate=${certificate}
+      - --output-signature=${signature}
+      - ${artifact}
+      - --yes
+
+sboms:
+  - artifacts: binary
