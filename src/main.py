@@ -25,6 +25,8 @@ from src.dgraphai.api.stream      import router as stream_router, hf_router
 from src.dgraphai.api.alerts      import router as alerts_router
 from src.dgraphai.api.compliance  import router as compliance_router
 from src.dgraphai.api.connectors_full import router as connectors_router
+from src.dgraphai.api.inventory       import router as inventory_router
+from src.dgraphai.graphql.schema      import make_graphql_router
 from src.dgraphai.db.session    import create_tables
 from src.dgraphai.core.config import API_HOST, API_PORT
 
@@ -74,10 +76,29 @@ app.include_router(hf_router)
 app.include_router(alerts_router)
 app.include_router(compliance_router)
 app.include_router(connectors_router)
+app.include_router(inventory_router)
 app.include_router(mounts_router)
 app.include_router(indexer_router)
 app.include_router(actions_router)
 app.include_router(tenants_router)
+
+
+# GraphQL endpoint — context injects tenant + graph backend
+async def _gql_context(request: __import__('fastapi').Request):
+    from src.dgraphai.auth.oidc import get_auth_context
+    from src.dgraphai.db.session import async_session
+    from src.dgraphai.graph.backends.factory import get_backend_for_tenant
+    from src.dgraphai.db.models import Tenant
+    from sqlalchemy import select
+    async with async_session() as db:
+        auth = await get_auth_context(request, db)
+        result = await db.execute(select(Tenant).where(Tenant.id == auth.tenant_id))
+        tenant = result.scalar_one_or_none()
+        backend = get_backend_for_tenant(tenant.graph_backend or 'neo4j', tenant.graph_config or {})
+        return {"tenant_id": auth.tenant_id, "graph_backend": backend, "user": auth}
+
+graphql_app = make_graphql_router(_gql_context)
+app.include_router(graphql_app, prefix="/graphql")
 
 
 @app.get("/api/health")

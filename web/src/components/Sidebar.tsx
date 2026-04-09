@@ -4,15 +4,18 @@
 import { NavLink } from 'react-router-dom'
 import {
   Network, Search, HardDrive, Terminal,
-  Shield, Activity, Settings, Layers, PlugZap
+  Shield, Activity, Settings, Layers, PlugZap,
+  LayoutGrid, Wrench
 } from 'lucide-react'
 
 const NAV = [
   { to: '/',        icon: Network,    label: 'Graph'      },
   { to: '/search',  icon: Search,     label: 'Search'     },
   { to: '/mounts',     icon: HardDrive, label: 'Sources'    },
-  { to: '/connectors', icon: PlugZap,   label: 'Connectors' },
-  { to: '/query',   icon: Terminal,   label: 'Query'      },
+  { to: '/connectors', icon: PlugZap,    label: 'Connectors' },
+  { to: '/inventory',  icon: LayoutGrid, label: 'Inventory'  },
+  { to: '/builder',    icon: Wrench,     label: 'Builder'    },
+  { to: '/query',      icon: Terminal,   label: 'Query'      },
   { to: '/security',icon: Shield,     label: 'Security'   },
   { to: '/indexer', icon: Activity,   label: 'Indexer'    },
 ]
