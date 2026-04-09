@@ -1,0 +1,116 @@
+{{- if .Values.celery.enabled }}
+{{- with .Values.celery.workers.enrichment }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dgraphai.fullname" $ }}-worker-enrichment
+  labels:
+    {{- include "dgraphai.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: worker-enrichment
+spec:
+  replicas: {{ .replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: worker-enrichment
+  template:
+    metadata:
+      labels:
+        {{- include "dgraphai.labels" $ | nindent 8 }}
+        app.kubernetes.io/component: worker-enrichment
+      annotations:
+        # Force pod restart on config change
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") $ | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "dgraphai.serviceAccountName" $ }}
+
+      # ── Security — enrichment workers parse untrusted file content ─────────
+      # They need stricter isolation than the API server.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        # Prevent privilege escalation
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: worker
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          command:
+            - celery
+            - -A
+            - src.dgraphai.tasks.celery_app
+            - worker
+            - --queues={{ .queues | default "enrichment" }}
+            - --concurrency={{ .concurrency | default 2 }}
+            - --loglevel=info
+            - --max-tasks-per-child=100   # Restart worker after 100 tasks (memory hygiene)
+            - --max-memory-per-child=512000  # 512MB limit per worker child
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+              # Enrichment workers don't need any capabilities
+
+          # Resource limits — prevent one enrichment job from starving others
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+
+          # Tmp directories (needed for file processing)
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /app/.cache
+
+          env:
+            {{- range $k, $v := $.Values.api.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            # Enrichment-specific limits
+            - name: ENRICHMENT_MAX_FILE_SIZE_MB
+              value: "100"
+            - name: ENRICHMENT_TIMEOUT_SECS
+              value: "120"
+
+          # Liveness: restart if worker hangs
+          livenessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - src.dgraphai.tasks.celery_app
+                - inspect
+                - ping
+                - -d
+                - "celery@$HOSTNAME"
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory   # tmpfs — no disk I/O for temp files
+            sizeLimit: 1Gi
+        - name: cache
+          emptyDir:
+            sizeLimit: 2Gi
+
+      # Spread enrichment workers across nodes
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: worker-enrichment
+{{- end }}
+{{- end }}

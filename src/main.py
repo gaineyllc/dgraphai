@@ -160,7 +160,14 @@ _setup_metrics(app)
 
 @app.get("/api/health")
 async def health() -> dict:
-    return {"status": "ok", "version": "0.2.0"}
+    from src.dgraphai.graph.circuit_breaker import all_breaker_stats
+    breakers = all_breaker_stats()
+    any_open = any(b["state"] == "open" for b in breakers.values())
+    return {
+        "status":  "degraded" if any_open else "ok",
+        "version": "0.2.0",
+        "graph_circuit_breakers": breakers,
+    }
 
 
 # Serve React frontend in production
