@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fsgraph-scanner
+  namespace: fsgraph   # or customer's namespace for on-prem
+  labels:
+    app: fsgraph-scanner
+    component: scanner
+spec:
+  replicas: 1           # one scanner per deployment; scale by adding deployments
+  selector:
+    matchLabels:
+      app: fsgraph-scanner
+  template:
+    metadata:
+      labels:
+        app: fsgraph-scanner
+        component: scanner
+    spec:
+      terminationGracePeriodSeconds: 60   # allow running scans to finish
+      serviceAccountName: fsgraph-scanner
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: scanner
+          image: ghcr.io/gaineyllc/fsgraph-scanner:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: health
+              protocol: TCP
+              # Health UI — only bind to pod IP, not exposed via Service
+          env:
+            - name: FSGRAPH_BACKEND_URL
+              valueFrom:
+                secretKeyRef:
+                  name: fsgraph-scanner-secrets
+                  key: backend-url
+            - name: FSGRAPH_AGENT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: fsgraph-scanner-secrets
+                  key: api-key
+            - name: FSGRAPH_AGENT_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: FSGRAPH_HEALTH_HOST
+              value: "127.0.0.1"   # loopback only — not accessible from outside pod
+            - name: FSGRAPH_HEALTH_PORT
+              value: "8080"
+            - name: FSGRAPH_SCAN_INTERVAL_SECONDS
+              value: "3600"
+          volumeMounts:
+            - name: scan-data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+              host: "127.0.0.1"
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+              host: "127.0.0.1"
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false   # needs to write scan state
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: scan-data
+          persistentVolumeClaim:
+            claimName: fsgraph-scanner-data
+---
+# PVC for scan state (SQLite index DB, face embeddings cache)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fsgraph-scanner-data
+  namespace: fsgraph
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fsgraph-scanner
+  namespace: fsgraph
+---
+# NOTE: No Service for the scanner — health UI is loopback only.
+# To view health UI: kubectl port-forward pod/fsgraph-scanner-xxx 8080:8080
+# Then open http://localhost:8080
