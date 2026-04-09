@@ -24,7 +24,7 @@ from src.dgraphai.api.license   import router as license_router
 from src.dgraphai.api.stream      import router as stream_router, hf_router
 from src.dgraphai.api.alerts      import router as alerts_router
 from src.dgraphai.api.compliance  import router as compliance_router
-from src.dgraphai.api.connectors  import router as connectors_router
+from src.dgraphai.api.connectors_full import router as connectors_router
 from src.dgraphai.db.session    import create_tables
 from src.dgraphai.core.config import API_HOST, API_PORT
 

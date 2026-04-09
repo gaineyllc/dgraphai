@@ -6,7 +6,8 @@ import { MountsPage } from './pages/MountsPage'
 import { QueryWorkspace } from './pages/QueryWorkspace'
 import WorkflowBuilderPage from './pages/WorkflowBuilder'
 import { IndexerDashboard } from './pages/IndexerDashboard'
-import { SecurityPage } from './pages/SecurityPage'
+import { SecurityPage }     from './pages/SecurityPage'
+import { ConnectorsPage }   from './pages/ConnectorsPage'
 import { useQuery } from '@tanstack/react-query'
 import { graphApi } from './lib/api'
 import { Terminal, Shield, Activity, Settings } from 'lucide-react'
@@ -30,7 +31,8 @@ function AppShell() {
       <main className="flex-1 flex flex-col overflow-hidden">
         <Routes>
           <Route path="/"         element={<GraphPage />} />
-          <Route path="/mounts"   element={<MountsPage />} />
+          <Route path="/mounts"     element={<MountsPage />} />
+          <Route path="/connectors" element={<ConnectorsPage />} />
           <Route path="/query"    element={<QueryWorkspace />} />
           <Route path="/security" element={<SecurityPage />} />
           <Route path="/workflows" element={<WorkflowBuilderPage />} />
