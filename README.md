@@ -1,4 +1,4 @@
-# fsgraph
+# dgraph.ai
 
 Filesystem knowledge graph platform. Index any filesystem (local, SMB, NFS) into a Neo4j graph, visualize and query it interactively.
 

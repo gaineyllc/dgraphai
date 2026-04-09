@@ -11,10 +11,10 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.fsgraph.db.models import Role, Tenant, User, RoleAssignment
-from src.fsgraph.db.session import get_db
-from src.fsgraph.auth.oidc import get_auth_context, AuthContext
-from src.fsgraph.rbac.engine import BUILTIN_PERMISSIONS, require_permissions
+from src.dgraphai.db.models import Role, Tenant, User, RoleAssignment
+from src.dgraphai.db.session import get_db
+from src.dgraphai.auth.oidc import get_auth_context, AuthContext
+from src.dgraphai.rbac.engine import BUILTIN_PERMISSIONS, require_permissions
 
 router = APIRouter(prefix="/api/tenants", tags=["tenants"])
 

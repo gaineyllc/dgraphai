@@ -26,7 +26,7 @@ def get_backend_for_tenant(
         return Neo4jBackend(
             uri      = config.get("uri",      os.getenv("NEO4J_URI",      "bolt://localhost:7687")),
             user     = config.get("user",     os.getenv("NEO4J_USER",     "neo4j")),
-            password = config.get("password", os.getenv("NEO4J_PASSWORD", "fsgraph-local")),
+            password = config.get("password", os.getenv("NEO4J_PASSWORD", "dgraphai-local")),
         )
 
     if backend_type == "neptune":

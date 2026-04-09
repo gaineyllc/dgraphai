@@ -1,6 +1,6 @@
 """
 Mount manager — add, remove, list filesystem sources.
-Persists mount configurations to ~/.fsgraph/mounts.json.
+Persists mount configurations to ~/.dgraphai/mounts.json.
 Supports: local paths, SMB (smb://), NFS (nfs://)
 """
 from __future__ import annotations
@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from src.fsgraph.core.config import data_dir
+from src.dgraphai.core.config import data_dir
 
 
 def _mounts_file() -> Path:
@@ -35,7 +35,7 @@ def _save(mounts: list[dict[str, Any]]) -> None:
 class MountManager:
     """
     Manages filesystem mount configurations.
-    A "mount" is a named source URI that fsgraph can index.
+    A "mount" is a named source URI that dgraphai can index.
     """
 
     def list_mounts(self) -> list[dict[str, Any]]:

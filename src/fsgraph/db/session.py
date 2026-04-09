@@ -10,11 +10,11 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession, async_sessionmaker, create_async_engine
 )
 
-from src.fsgraph.db.models import Base
+from src.dgraphai.db.models import Base
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql+asyncpg://fsgraph:fsgraph@localhost:5432/fsgraph"
+    "postgresql+asyncpg://dgraphai:dgraphai@localhost:5432/dgraphai"
 )
 
 engine = create_async_engine(

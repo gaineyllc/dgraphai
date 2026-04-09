@@ -69,7 +69,7 @@ class OIDCConfig(Base):
     client_id       = Column(String(256), nullable=False)
     client_secret   = Column(Text, nullable=False)             # encrypted at rest
     scopes          = Column(JSON, default=lambda: ["openid", "email", "profile"])
-    claim_mapping   = Column(JSON, default=dict)               # map IdP claims → fsgraph attrs
+    claim_mapping   = Column(JSON, default=dict)               # map IdP claims → dgraphai attrs
     # e.g. {"email": "email", "name": "name", "groups": "groups"}
     is_default      = Column(Boolean, default=True)
     is_active       = Column(Boolean, default=True)

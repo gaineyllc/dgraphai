@@ -1,5 +1,5 @@
 """
-fsgraph API server — multi-tenant, RBAC-enforced.
+dgraphai API server — multi-tenant, RBAC-enforced.
 """
 from __future__ import annotations
 
@@ -11,16 +11,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from src.fsgraph.api.graph   import router as graph_router
-from src.fsgraph.api.mounts  import router as mounts_router
-from src.fsgraph.api.indexer import router as indexer_router
-from src.fsgraph.api.actions import router as actions_router
-from src.fsgraph.api.tenants import router as tenants_router
-from src.fsgraph.api.auth    import router as auth_router
-from src.fsgraph.db.session  import create_tables
-from src.fsgraph.core.config import API_HOST, API_PORT
+from src.dgraphai.api.graph   import router as graph_router
+from src.dgraphai.api.mounts  import router as mounts_router
+from src.dgraphai.api.indexer import router as indexer_router
+from src.dgraphai.api.actions import router as actions_router
+from src.dgraphai.api.tenants import router as tenants_router
+from src.dgraphai.api.auth    import router as auth_router
+from src.dgraphai.db.session  import create_tables
+from src.dgraphai.core.config import API_HOST, API_PORT
 
-log = logging.getLogger("fsgraph")
+log = logging.getLogger("dgraphai")
 
 
 @asynccontextmanager
@@ -32,19 +32,19 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="fsgraph",
+    title="dgraphai",
     version="0.2.0",
     description="Filesystem knowledge graph platform — multi-tenant",
     lifespan=lifespan,
-    # Disable docs in production — set FSGRAPH_ENABLE_DOCS=true for dev
-    docs_url="/api/docs"  if __import__("os").getenv("FSGRAPH_ENABLE_DOCS") else None,
-    redoc_url="/api/redoc" if __import__("os").getenv("FSGRAPH_ENABLE_DOCS") else None,
+    # Disable docs in production — set dgraphai_ENABLE_DOCS=true for dev
+    docs_url="/api/docs"  if __import__("os").getenv("dgraphai_ENABLE_DOCS") else None,
+    redoc_url="/api/redoc" if __import__("os").getenv("dgraphai_ENABLE_DOCS") else None,
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=__import__("os").getenv(
-        "FSGRAPH_ALLOWED_ORIGINS",
+        "dgraphai_ALLOWED_ORIGINS",
         "http://localhost:5173,http://localhost:7474"
     ).split(","),
     allow_credentials=True,
@@ -80,6 +80,6 @@ if __name__ == "__main__":
         "src.main:app",
         host=API_HOST,
         port=API_PORT,
-        reload=bool(__import__("os").getenv("FSGRAPH_ENABLE_DOCS")),
+        reload=bool(__import__("os").getenv("dgraphai_ENABLE_DOCS")),
         log_level="info",
     )

@@ -13,7 +13,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from src.fsgraph.core.config import data_dir
+from src.dgraphai.core.config import data_dir
 
 router = APIRouter(prefix="/api/actions", tags=["actions"])
 

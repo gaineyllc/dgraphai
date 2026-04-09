@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from src.fsgraph.graph.client import GraphClient, get_graph_client
+from src.dgraphai.graph.client import GraphClient, get_graph_client
 
 router = APIRouter(prefix="/api/graph", tags=["graph"])
 

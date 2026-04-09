@@ -33,8 +33,8 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.fsgraph.db.models import Role, RoleAssignment
-from src.fsgraph.db.session import get_db
+from src.dgraphai.db.models import Role, RoleAssignment
+from src.dgraphai.db.session import get_db
 
 # ── Built-in role permission sets ─────────────────────────────────────────────
 
@@ -123,7 +123,7 @@ def has_permission(permission: str) -> Any:
     Usage:
         @router.get("/sensitive", dependencies=[Depends(has_permission("graph:query"))])
     """
-    from src.fsgraph.auth.oidc import get_auth_context, AuthContext
+    from src.dgraphai.auth.oidc import get_auth_context, AuthContext
 
     async def _check(auth: AuthContext = Depends(get_auth_context)) -> AuthContext:
         if not _is_allowed(auth.permissions, permission):
@@ -138,7 +138,7 @@ def has_permission(permission: str) -> Any:
 
 def require_permissions(*permissions: str) -> Any:
     """Require ALL of the listed permissions."""
-    from src.fsgraph.auth.oidc import get_auth_context, AuthContext
+    from src.dgraphai.auth.oidc import get_auth_context, AuthContext
 
     async def _check(auth: AuthContext = Depends(get_auth_context)) -> AuthContext:
         missing = [p for p in permissions if not _is_allowed(auth.permissions, p)]

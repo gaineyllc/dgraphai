@@ -1,5 +1,5 @@
 """
-Neo4j graph client for fsgraph.
+Neo4j graph client for dgraphai.
 Provides typed query interface over the knowledge graph.
 All methods return clean Python dicts — no Neo4j driver objects leak out.
 """
@@ -10,7 +10,7 @@ from typing import Any
 
 from neo4j import AsyncGraphDatabase, AsyncDriver
 
-from src.fsgraph.core.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
+from src.dgraphai.core.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD
 
 
 class GraphClient:

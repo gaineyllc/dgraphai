@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from src.fsgraph.mounts.manager import MountManager
+from src.dgraphai.mounts.manager import MountManager
 
 router = APIRouter(prefix="/api/mounts", tags=["mounts"])
 _manager = MountManager()

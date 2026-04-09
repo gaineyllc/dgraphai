@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: fsgraph
+  name: dgraphai
   labels:
-    app.kubernetes.io/name: fsgraph
-    app.kubernetes.io/managed-by: fsgraph
+    app.kubernetes.io/name: dgraphai
+    app.kubernetes.io/managed-by: dgraphai

@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fsgraph-api
-  namespace: fsgraph
+  name: dgraphai-api
+  namespace: dgraphai
   labels:
-    app: fsgraph-api
+    app: dgraphai-api
     component: api
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: fsgraph-api
+      app: dgraphai-api
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -19,18 +19,18 @@ spec:
   template:
     metadata:
       labels:
-        app: fsgraph-api
+        app: dgraphai-api
         component: api
     spec:
       terminationGracePeriodSeconds: 30
-      serviceAccountName: fsgraph-api
+      serviceAccountName: dgraphai-api
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
       containers:
         - name: api
-          image: ghcr.io/gaineyllc/fsgraph-api:latest
+          image: ghcr.io/gaineyllc/dgraphai-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 7474
@@ -40,31 +40,31 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: fsgraph-secrets
+                  name: dgraphai-secrets
                   key: database-url
             - name: NEO4J_URI
               valueFrom:
                 secretKeyRef:
-                  name: fsgraph-secrets
+                  name: dgraphai-secrets
                   key: neo4j-uri
             - name: NEO4J_USER
               valueFrom:
                 secretKeyRef:
-                  name: fsgraph-secrets
+                  name: dgraphai-secrets
                   key: neo4j-user
             - name: NEO4J_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: fsgraph-secrets
+                  name: dgraphai-secrets
                   key: neo4j-password
             - name: ENCRYPTION_KEY
               valueFrom:
                 secretKeyRef:
-                  name: fsgraph-secrets
+                  name: dgraphai-secrets
                   key: encryption-key
-            - name: FSGRAPH_HOST
+            - name: dgraphai_HOST
               value: "0.0.0.0"
-            - name: FSGRAPH_PORT
+            - name: dgraphai_PORT
               value: "7474"
           resources:
             requests:
@@ -100,11 +100,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: fsgraph-api
-  namespace: fsgraph
+  name: dgraphai-api
+  namespace: dgraphai
 spec:
   selector:
-    app: fsgraph-api
+    app: dgraphai-api
   ports:
     - port: 80
       targetPort: 7474
@@ -114,13 +114,13 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: fsgraph-api
-  namespace: fsgraph
+  name: dgraphai-api
+  namespace: dgraphai
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: fsgraph-api
+    name: dgraphai-api
   minReplicas: 2
   maxReplicas: 10
   metrics:
@@ -140,5 +140,5 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: fsgraph-api
-  namespace: fsgraph
+  name: dgraphai-api
+  namespace: dgraphai

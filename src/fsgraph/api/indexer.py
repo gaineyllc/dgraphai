@@ -47,7 +47,7 @@ async def start_index(req: IndexRequest) -> dict[str, Any]:
     Start indexing a mounted filesystem source.
     Returns job_id — subscribe to /ws/indexer/{job_id} for live progress.
     """
-    from src.fsgraph.mounts.manager import MountManager
+    from src.dgraphai.mounts.manager import MountManager
     import uuid
 
     manager = MountManager()
@@ -120,11 +120,11 @@ async def _run_index(job_id: str, source: str, req: IndexRequest) -> None:
     """Run the indexing pipeline and stream progress updates."""
     job = _jobs[job_id]
     try:
-        from src.fsgraph.graph.client import get_graph_client
-        from src.fsgraph.mounts.manager import MountManager
+        from src.dgraphai.graph.client import get_graph_client
+        from src.dgraphai.mounts.manager import MountManager
 
         # Import archon's indexer (reused as library)
-        # This keeps fsgraph thin — archon owns the indexing logic
+        # This keeps dgraphai thin — archon owns the indexing logic
         from archon.src.pipeline.indexer import ArchonIndexer
 
         def on_progress(result: Any) -> None:

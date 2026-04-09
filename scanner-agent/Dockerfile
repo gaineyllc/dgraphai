@@ -1,4 +1,4 @@
-# fsgraph Scanner Agent — minimal attack surface
+# dgraphai Scanner Agent — minimal attack surface
 FROM python:3.14-slim AS runtime
 
 RUN groupadd -r scanner && useradd -r -g scanner scanner

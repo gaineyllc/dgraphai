@@ -32,8 +32,8 @@ from jose import JWTError, jwk, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.fsgraph.db.models import OIDCConfig, Tenant, User
-from src.fsgraph.db.session import get_db
+from src.dgraphai.db.models import OIDCConfig, Tenant, User
+from src.dgraphai.db.session import get_db
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -192,7 +192,7 @@ async def get_auth_context(
             user.display_name = display_name
 
     # Load roles and permissions
-    from src.fsgraph.rbac.engine import load_user_permissions
+    from src.dgraphai.rbac.engine import load_user_permissions
     roles, permissions = await load_user_permissions(user.id, oidc_config.tenant_id, db)
 
     return AuthContext(

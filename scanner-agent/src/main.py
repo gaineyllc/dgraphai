@@ -1,8 +1,8 @@
 """
-fsgraph Scanner Agent
+dgraphai Scanner Agent
 ─────────────────────
 On-prem component that indexes local filesystems and syncs graph deltas
-to the fsgraph backend. Runs as a Kubernetes deployment or Docker container.
+to the dgraphai backend. Runs as a Kubernetes deployment or Docker container.
 
 Security model:
   - Outbound connections only (no inbound except health UI on loopback)
@@ -34,12 +34,12 @@ from fastapi.staticfiles import StaticFiles
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-BACKEND_URL  = os.environ.get("FSGRAPH_BACKEND_URL", "")
-API_KEY      = os.environ.get("FSGRAPH_AGENT_API_KEY", "")
-AGENT_NAME   = os.environ.get("FSGRAPH_AGENT_NAME", platform.node())
-HEALTH_PORT  = int(os.environ.get("FSGRAPH_HEALTH_PORT", "8080"))
-HEALTH_HOST  = os.environ.get("FSGRAPH_HEALTH_HOST", "127.0.0.1")  # loopback only
-SCAN_INTERVAL = int(os.environ.get("FSGRAPH_SCAN_INTERVAL_SECONDS", "3600"))
+BACKEND_URL  = os.environ.get("dgraphai_BACKEND_URL", "")
+API_KEY      = os.environ.get("dgraphai_AGENT_API_KEY", "")
+AGENT_NAME   = os.environ.get("dgraphai_AGENT_NAME", platform.node())
+HEALTH_PORT  = int(os.environ.get("dgraphai_HEALTH_PORT", "8080"))
+HEALTH_HOST  = os.environ.get("dgraphai_HEALTH_HOST", "127.0.0.1")  # loopback only
+SCAN_INTERVAL = int(os.environ.get("dgraphai_SCAN_INTERVAL_SECONDS", "3600"))
 
 # ── State ─────────────────────────────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ state = AgentState()
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="fsgraph Scanner Agent",
+    title="dgraphai Scanner Agent",
     docs_url=None,   # no Swagger UI
     redoc_url=None,  # no ReDoc
     openapi_url=None # no OpenAPI schema
@@ -138,7 +138,7 @@ HEALTH_UI_HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="refresh" content="30">
-<title>fsgraph Scanner Agent</title>
+<title>dgraphai Scanner Agent</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -175,7 +175,7 @@ HEALTH_UI_HTML = """<!DOCTYPE html>
 <div class="header">
   <div class="logo">⬡</div>
   <div>
-    <h1>fsgraph Scanner Agent</h1>
+    <h1>dgraphai Scanner Agent</h1>
     <div class="subtitle" id="agent-name">Loading…</div>
   </div>
 </div>
