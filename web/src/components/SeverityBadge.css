@@ -1,0 +1,37 @@
+.severity-badge-wrap {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+
+.severity-badge {
+  border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #fff; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.severity-badge-label {
+  font-size: 12px; font-weight: 600;
+}
+
+.severity-badge-count {
+  font-size: 13px; font-weight: 700; color: #d0d0e8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pill variant */
+.severity-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px 3px 5px; border-radius: 20px;
+  background: color-mix(in srgb, var(--sc, #6b7280) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sc, #6b7280) 25%, transparent);
+}
+
+.severity-pill-count {
+  font-size: 12px; font-weight: 700; color: #d0d0e8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Row of pills */
+.severity-row {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}

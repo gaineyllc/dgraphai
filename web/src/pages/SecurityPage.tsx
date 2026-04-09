@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'
 import { graphApi, type GraphNode } from '../lib/api'
 import { InspectionPane } from '../components/InspectionPane'
+import { SeverityBadge as SevBadge, SeverityRow } from '../components/SeverityBadge'
+import { MetricCard, TrendBadge as TrendBadgeComp } from '../components/TrendBadge'
 import { AnimatePresence } from 'framer-motion'
 import '../components/inspection.css'
 import './SecurityPage.css'
@@ -128,6 +130,42 @@ export function SecurityPage() {
           <h1>Security Intelligence</h1>
           <p>Real-time security findings from your filesystem graph</p>
         </div>
+      </div>
+
+      {/* Wiz-style 3-column summary cards at top */}
+      <div className="sp-summary-row">
+        <MetricCard
+          title="Secrets Exposed"
+          value={0}
+          subtitle="Files with hardcoded credentials"
+          severity="critical"
+          trend={{ pct: -5 }}
+          icon={Lock}
+        />
+        <MetricCard
+          title="PII Files"
+          value={0}
+          subtitle="Files containing personal data"
+          severity="high"
+          trend={{ pct: 3 }}
+          icon={Eye}
+        />
+        <MetricCard
+          title="Critical CVEs"
+          value={0}
+          subtitle="Actively exploited vulnerabilities"
+          severity="critical"
+          trend={{ pct: 0 }}
+          icon={ShieldAlert}
+        />
+        <MetricCard
+          title="Expired Certs"
+          value={0}
+          subtitle="Certificates past expiry"
+          severity="medium"
+          trend={{ pct: -12 }}
+          icon={AlertTriangle}
+        />
       </div>
 
       <div className="sp-grid">

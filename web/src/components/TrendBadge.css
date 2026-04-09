@@ -1,0 +1,46 @@
+/* Trend badges — ↓93% green / ↑10% red — matches Wiz pill style */
+.trend-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px; border-radius: 20px;
+  font-weight: 700; white-space: nowrap;
+}
+.trend-badge-sm { font-size: 11px; }
+.trend-badge-md { font-size: 12px; }
+
+.trend-positive { background: rgba(22,163,74,.12);  color: #16a34a; }
+.trend-negative { background: rgba(220,38,38,.10);  color: #dc2626; }
+.trend-flat     { background: rgba(107,114,128,.1); color: #6b7280; }
+
+/* MetricCard — large number with trend */
+.metric-card {
+  background: #0e0e16; border: 1px solid #1a1a28;
+  border-left: 2px solid var(--mc, #4f8ef7);
+  border-radius: 10px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+  transition: border-color .15s;
+}
+.metric-card-clickable { cursor: pointer; }
+.metric-card-clickable:hover { border-color: var(--mc, #4f8ef7); background: #12121f; }
+
+.metric-card-header {
+  display: flex; align-items: center; gap: 8px;
+}
+.metric-card-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: color-mix(in srgb, var(--mc, #4f8ef7) 12%, transparent);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.metric-card-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: #55557a;
+}
+.metric-card-body {
+  display: flex; align-items: baseline; gap: 10px;
+}
+.metric-card-value {
+  font-size: 32px; font-weight: 800; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+}
+.metric-card-sub {
+  font-size: 11px; color: #35354a; margin-top: -2px;
+}

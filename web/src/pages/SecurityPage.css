@@ -6,6 +6,13 @@
 .sp-header h1 { font-size: 18px; font-weight: 700; color: #e2e2f0; }
 .sp-header p  { font-size: 12px; color: #55557a; margin-top: 2px; }
 
+.sp-summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
 .sp-grid { display: flex; flex-direction: column; gap: 8px; }
 
 /* Panel */
