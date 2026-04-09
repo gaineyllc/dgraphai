@@ -19,11 +19,12 @@
  *   - Zoom controls + fit-to-screen
  *   - Query results count + execution time
  */
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import {
   Play, RotateCcw, Table2, Network, ZoomIn, ZoomOut,
-  Maximize2, Save, Lasso, Clock, Database
+  Maximize2, Save, Lasso, Clock, Database,
+  SlidersHorizontal, Plus, X, ChevronDown
 } from 'lucide-react'
 import { FilterSidebar } from '../components/FilterSidebar'
 import { ResultsTable } from '../components/ResultsTable'
@@ -67,6 +68,8 @@ export function QueryWorkspace() {
   const [tooltipPos,   setTooltipPos]   = useState({ x: 0, y: 0 })
   const [inspecting,   setInspecting]   = useState<GraphNode | null>(null)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [showFilterBuilder, setShowFilterBuilder] = useState(false)
+  const [attrFilters, setAttrFilters]             = useState<AttrFilter[]>([])
 
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef        = useRef<Core | null>(null)
@@ -296,7 +299,7 @@ export function QueryWorkspace() {
     <div className="query-workspace">
 
       {/* ── Query bar ─────────────────────────────────────────────────── */}
-      <div className="qw-querybar">
+      <div className="qw-querybar" onClick={() => !showFilterBuilder && setShowFilterBuilder(true)}>
         <div className="qw-examples">
           {EXAMPLE_QUERIES.map(eq => (
             <button key={eq.label} onClick={() => setCypher(eq.q)} className="qw-example-pill">
@@ -328,12 +331,48 @@ export function QueryWorkspace() {
             </button>
           </div>
         </div>
+        {/* Attribute filter builder — appears when query bar is clicked */}
+        {showFilterBuilder && (
+          <AttributeFilterBuilder
+            nodes={subgraph.nodes}
+            filters={attrFilters}
+            onChange={setAttrFilters}
+            onClose={() => setShowFilterBuilder(false)}
+            onApply={(filters) => {
+              // Append WHERE clauses to cypher and re-run
+              const extra = filters
+                .filter(f => f.field && f.op)
+                .map(f => {
+                  const alias = f.alias || 'n'
+                  const val = f.op === 'IS NULL' || f.op === 'IS NOT NULL' ? '' :
+                    (f.value === 'true' || f.value === 'false' || !isNaN(Number(f.value)))
+                      ? ` ${f.value}` : ` '${f.value}'`
+                  return `${alias}.${f.field} ${f.op}${val}`
+                })
+                .join(' AND ')
+              if (!extra) return
+              const base = cypher.replace(/\s+WHERE\s+/i, ' WHERE ').replace(/\s+RETURN\s+/i, ' RETURN ')
+              const hasWhere = /WHERE/i.test(base)
+              const newQ = hasWhere
+                ? base.replace(/(WHERE\s+)(.+?)(\s+RETURN)/is, `$1$2 AND ${extra}$3`)
+                : base.replace(/(RETURN)/i, `WHERE ${extra} RETURN`)
+              setCypher(newQ)
+              runQuery(newQ)
+              setShowFilterBuilder(false)
+            }}
+          />
+        )}
+
         {(execTime !== null || subgraph.nodes.length > 0) && (
           <div className="qw-stats">
             {subgraph.nodes.length > 0 && <span><Database size={11} /> {subgraph.nodes.length} nodes</span>}
             {tableRows.length > 0 && <span><Table2 size={11} /> {tableRows.length} rows</span>}
             {execTime !== null && <span><Clock size={11} /> {execTime.toFixed(0)}ms</span>}
             {activeFilters.length > 0 && <span className="qw-filter-badge">{activeFilters.length} filter{activeFilters.length > 1 ? 's' : ''} active</span>}
+            {attrFilters.length > 0 && <span className="qw-filter-badge">{attrFilters.length} attr filter{attrFilters.length > 1 ? 's' : ''}</span>}
+            <button className="qw-filter-toggle" onClick={e => { e.stopPropagation(); setShowFilterBuilder(v => !v) }}>
+              <SlidersHorizontal size={11} /> Filters
+            </button>
           </div>
         )}
       </div>
@@ -491,4 +530,131 @@ function SaveSelectionDialog({ nodes, onSave, onClose }: {
 
 function truncate(s: string, n: number) {
   return s.length > n ? s.slice(0, n) + '…' : s
+}
+
+// ── Attribute filter builder ───────────────────────────────────────────────────
+
+interface AttrFilter {
+  id:     string
+  alias:  string
+  field:  string
+  op:     string
+  value:  string
+}
+
+const ATTR_OPS = [
+  { op: '=',           label: '= equals'          },
+  { op: '<>',          label: '≠ not equals'       },
+  { op: '>',           label: '> greater than'     },
+  { op: '<',           label: '< less than'        },
+  { op: 'CONTAINS',    label: 'contains'           },
+  { op: 'STARTS WITH', label: 'starts with'        },
+  { op: 'IS NULL',     label: 'is not set'         },
+  { op: 'IS NOT NULL', label: 'is set'             },
+]
+
+function AttributeFilterBuilder({ nodes, filters, onChange, onClose, onApply }) {
+  const idRef = useRef(0)
+
+  // Collect all property keys seen in current result nodes
+  const knownFields = useMemo(() => {
+    const keys = new Set<string>()
+    for (const node of nodes) {
+      for (const k of Object.keys(node.props ?? {})) {
+        if (!k.startsWith('_') && k !== 'tenant_id') keys.add(k)
+      }
+    }
+    return Array.from(keys).sort()
+  }, [nodes])
+
+  // Collect aliases (node variable names) from current nodes
+  const aliases = useMemo(() => {
+    const s = new Set<string>()
+    for (const node of nodes) s.add(node.label?.toLowerCase()[0] ?? 'n')
+    s.add('f'); s.add('n'); s.add('a')
+    return Array.from(s)
+  }, [nodes])
+
+  const addFilter = () => {
+    onChange(prev => [...prev, { id: String(idRef.current++), alias: aliases[0] ?? 'f', field: '', op: '=', value: '' }])
+  }
+
+  const updateFilter = (id: string, patch: Partial<AttrFilter>) => {
+    onChange(prev => prev.map(f => f.id === id ? { ...f, ...patch } : f))
+  }
+
+  const removeFilter = (id: string) => {
+    onChange(prev => prev.filter(f => f.id !== id))
+  }
+
+  return (
+    <div className="qw-attr-builder" onClick={e => e.stopPropagation()}>
+      <div className="qw-attr-header">
+        <SlidersHorizontal size={12} />
+        <span>Add filters</span>
+        <span className="qw-attr-hint">Appended to query as WHERE clauses</span>
+        <button onClick={onClose} className="qw-attr-close"><X size={12} /></button>
+      </div>
+
+      <div className="qw-attr-rows">
+        {filters.map(f => (
+          <div key={f.id} className="qw-attr-row">
+            {/* Alias selector */}
+            <select
+              value={f.alias}
+              onChange={e => updateFilter(f.id, { alias: e.target.value })}
+              className="qw-attr-select qw-attr-alias"
+            >
+              {aliases.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <span className="qw-attr-dot">.</span>
+            {/* Field */}
+            <select
+              value={f.field}
+              onChange={e => updateFilter(f.id, { field: e.target.value })}
+              className="qw-attr-select qw-attr-field"
+            >
+              <option value="">— field —</option>
+              {knownFields.map(k => <option key={k} value={k}>{k}</option>)}
+            </select>
+            {/* Operator */}
+            <select
+              value={f.op}
+              onChange={e => updateFilter(f.id, { op: e.target.value })}
+              className="qw-attr-select qw-attr-op"
+            >
+              {ATTR_OPS.map(o => <option key={o.op} value={o.op}>{o.label}</option>)}
+            </select>
+            {/* Value */}
+            {f.op !== 'IS NULL' && f.op !== 'IS NOT NULL' && (
+              <input
+                value={f.value}
+                onChange={e => updateFilter(f.id, { value: e.target.value })}
+                placeholder="value"
+                className="qw-attr-value"
+              />
+            )}
+            <button onClick={() => removeFilter(f.id)} className="qw-attr-remove"><X size={10} /></button>
+          </div>
+        ))}
+
+        {filters.length === 0 && (
+          <div className="qw-attr-empty">No filters yet — add one to narrow results</div>
+        )}
+      </div>
+
+      <div className="qw-attr-footer">
+        <button onClick={addFilter} className="qw-attr-add">
+          <Plus size={11} /> Add filter
+        </button>
+        <button
+          onClick={() => onApply(filters)}
+          disabled={!filters.some(f => f.field && f.op)}
+          className="qw-attr-apply"
+        >
+          Apply & re-run
+        </button>
+      </div>
+    </div>
+  )
 }

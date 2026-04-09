@@ -1,45 +1,45 @@
 // @ts-nocheck
 /**
- * Data Inventory — hierarchical drill-down with paginated node table.
+ * Data Inventory — Wiz-style hierarchical drill-down.
  *
- * Root view: category cards with counts.
- * Category view: subcategory cards + paginated node table with column schema.
- * URL: /inventory → /inventory?cat=video-media → /inventory?cat=video-4k
+ * Flow:
+ *   Root: group → top-level categories (with counts)
+ *   Drill: category → subcategories (with counts) until leaf
+ *   Leaf:  paginated node list — click node → right drawer
+ *   Drawer: node details + "View in Graph" → navigates to /query with cypher
+ *
+ * URL: /inventory?cat=<id>  (bookmarkable, each level has its own URL)
  */
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useMemo } from 'react'
 import {
   Search, ChevronRight, Database, Layers,
-  ChevronLeft, ExternalLink, ArrowUpRight,
-  FileText, HardDrive, AlertTriangle, MoreHorizontal
+  X, ExternalLink, ArrowUpRight, Copy, Tag
 } from 'lucide-react'
 import './InventoryPage.css'
 
 // ── API ────────────────────────────────────────────────────────────────────────
 
 const api = {
-  list:    () => fetch('/api/inventory').then(r => r.json()),
-  detail:  (id: string, page: number, pageSize = 25) =>
+  list:   ()                          => fetch('/api/inventory').then(r => r.json()),
+  detail: (id: string, page: number, pageSize = 25) =>
     fetch(`/api/inventory/${id}?page=${page}&page_size=${pageSize}`).then(r => r.json()),
 }
 
-// ── Root view ──────────────────────────────────────────────────────────────────
+// ── Entry point ────────────────────────────────────────────────────────────────
 
 export function InventoryPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeCat = searchParams.get('cat')
 
-  if (activeCat) {
-    return (
-      <CategoryDrillDown
-        categoryId={activeCat}
-        onNavigate={id => setSearchParams(id ? { cat: id } : {})}
-      />
-    )
-  }
-  return <InventoryRoot onNavigate={id => setSearchParams({ cat: id })} />
+  const navigateTo = (id: string | null) =>
+    id ? setSearchParams({ cat: id }) : setSearchParams({})
+
+  return activeCat
+    ? <DrillDown categoryId={activeCat} onNavigate={navigateTo} />
+    : <InventoryRoot onNavigate={navigateTo} />
 }
 
 // ── Root ───────────────────────────────────────────────────────────────────────
@@ -60,12 +60,12 @@ function InventoryRoot({ onNavigate }) {
     const q = search.toLowerCase()
     const out: Record<string, any[]> = {}
     for (const [g, cats] of Object.entries(groups)) {
-      const matching = cats.filter(c =>
+      const match = cats.filter(c =>
         c.name.toLowerCase().includes(q) ||
         c.description.toLowerCase().includes(q) ||
-        c.tags?.some((t: string) => t.includes(q))
+        c.tags?.some(t => t.includes(q))
       )
-      if (matching.length) out[g] = matching
+      if (match.length) out[g] = match
     }
     return out
   }, [groups, search])
@@ -81,13 +81,11 @@ function InventoryRoot({ onNavigate }) {
           <p>Every data category indexed across your connected sources</p>
         </div>
         <div className="inv-header-stats">
-          <div className="inv-stat-pill">
-            <Database size={12} />
+          <div className="inv-stat-pill"><Database size={12} />
             <span className="inv-stat-num">{fmt(totalNodes)}</span>
             <span className="inv-stat-label">total nodes</span>
           </div>
-          <div className="inv-stat-pill">
-            <Layers size={12} />
+          <div className="inv-stat-pill"><Layers size={12} />
             <span className="inv-stat-num">{allCats.length}</span>
             <span className="inv-stat-label">categories</span>
           </div>
@@ -97,18 +95,12 @@ function InventoryRoot({ onNavigate }) {
       <div className="inv-search-row">
         <div className="inv-search">
           <Search size={13} />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Filter categories…"
-          />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter categories…" />
           {search && <button className="inv-search-clear" onClick={() => setSearch('')}>✕</button>}
         </div>
       </div>
 
-      {isLoading ? (
-        <LoadingSkeleton />
-      ) : (
+      {isLoading ? <LoadingSkeleton /> : (
         <div className="inv-groups">
           {Object.entries(filtered).map(([group, cats]) => {
             const groupTotal = cats.reduce((s, c) => s + (c.count ?? 0), 0)
@@ -126,7 +118,7 @@ function InventoryRoot({ onNavigate }) {
               </div>
             )
           })}
-          {Object.keys(filtered).length === 0 && search && (
+          {!Object.keys(filtered).length && search && (
             <div className="inv-no-results">No categories match <strong>"{search}"</strong></div>
           )}
         </div>
@@ -135,265 +127,302 @@ function InventoryRoot({ onNavigate }) {
   )
 }
 
-// ── Drill-down view ────────────────────────────────────────────────────────────
+// ── Drill-down ─────────────────────────────────────────────────────────────────
 
-function CategoryDrillDown({ categoryId, onNavigate }) {
+function DrillDown({ categoryId, onNavigate }) {
   const navigate = useNavigate()
-  const [page, setPage]       = useState(0)
-  const [loadedNodes, setLoaded] = useState<any[]>([])
+  const [page, setPage]           = useState(0)
+  const [nodes, setNodes]         = useState<any[]>([])
+  const [selectedNode, setSelected] = useState<any | null>(null)
   const PAGE_SIZE = 25
 
+  // Reset when category changes
+  const [prevId, setPrevId] = useState(categoryId)
+  if (prevId !== categoryId) {
+    setPage(0)
+    setNodes([])
+    setSelected(null)
+    setPrevId(categoryId)
+  }
+
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['inventory-detail', categoryId, page],
+    queryKey: ['inv-detail', categoryId, page],
     queryFn:  () => api.detail(categoryId, page, PAGE_SIZE),
-    keepPreviousData: true,
-    onSuccess: (d) => {
-      if (page === 0) {
-        setLoaded(d.nodes ?? [])
-      } else {
-        setLoaded(prev => [...prev, ...(d.nodes ?? [])])
-      }
+    onSuccess: d => {
+      setNodes(prev => page === 0 ? (d.nodes ?? []) : [...prev, ...(d.nodes ?? [])])
     },
   })
 
-  // Reset when category changes
-  const prevCatRef = { current: categoryId }
-  if (prevCatRef.current !== categoryId) {
-    setPage(0)
-    setLoaded([])
-  }
+  const cat        = data?.category
+  const subcats    = data?.subcategories ?? []
+  const pagination = data?.pagination
+  const breadcrumb = data?.breadcrumb ?? []
+  const hasMore    = pagination?.has_more ?? false
+  const total      = pagination?.total ?? 0
 
-  const loadMore = () => setPage(p => p + 1)
+  // If this category has subcategories and no leaf nodes yet — show subcategory grid only
+  const isLeaf = subcats.length === 0
 
-  const cat         = data?.category
-  const subcats     = data?.subcategories ?? []
-  const cols        = data?.columns ?? []
-  const pagination  = data?.pagination
-  const breadcrumb  = data?.breadcrumb ?? []
-  const hasMore     = pagination?.has_more ?? false
-  const total       = pagination?.total ?? 0
-
-  const openInGraph = () => {
-    if (data?.query_url) navigate(data.query_url)
+  const openInGraph = (cypher?: string) => {
+    const q = cypher ?? data?.query_url?.split('?q=')[1]?.split('&')[0]
+    if (q) navigate(`/query?q=${q}`)
   }
 
   return (
-    <div className="inventory-page">
+    <div className="inventory-page inv-drilldown">
+
       {/* Breadcrumb */}
-      <div className="inv-breadcrumb">
+      <nav className="inv-breadcrumb">
         {breadcrumb.map((crumb, i) => (
-          <span key={i} className="inv-crumb">
+          <span key={i} className="inv-crumb-item">
             {i > 0 && <ChevronRight size={11} className="inv-crumb-sep" />}
             <button
-              className={`inv-crumb-btn ${i === breadcrumb.length - 1 ? 'inv-crumb-active' : ''}`}
-              onClick={() => {
-                if (crumb.id === null) onNavigate(null)
-                else if (i < breadcrumb.length - 1) onNavigate(crumb.id)
-              }}
+              className={`inv-crumb-btn ${i === breadcrumb.length - 1 ? 'inv-crumb-current' : ''}`}
+              onClick={() => i < breadcrumb.length - 1
+                ? (crumb.id ? onNavigate(crumb.id) : onNavigate(null))
+                : undefined
+              }
+              disabled={i === breadcrumb.length - 1}
             >
-              {crumb.icon} {crumb.name}
+              <span>{crumb.icon}</span> {crumb.name}
             </button>
           </span>
         ))}
-      </div>
+      </nav>
 
-      {isLoading && page === 0 ? (
-        <LoadingSkeleton />
-      ) : (
+      {isLoading && page === 0 ? <LoadingSkeleton /> : cat && (
         <AnimatePresence mode="wait">
           <motion.div
             key={categoryId}
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.15 }}
             className="inv-detail"
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.14 }}
           >
-            {/* Category header */}
-            {cat && (
-              <div className="inv-detail-header" style={{ '--c': cat.color } as any}>
-                <div className="inv-detail-icon"
-                  style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}30` }}>
-                  {cat.icon}
-                </div>
-                <div className="inv-detail-title-block">
-                  <h2>{cat.name}</h2>
-                  <p>{cat.description}</p>
-                </div>
-                <div className="inv-detail-count-block">
-                  <div className="inv-detail-count" style={{ color: cat.color }}>
-                    {total !== null ? fmt(total) : '—'}
-                  </div>
-                  <div className="inv-detail-count-label">nodes</div>
-                </div>
-                <button onClick={openInGraph} className="inv-open-graph" title="Open in graph explorer">
-                  <ArrowUpRight size={13} /> View in graph
-                </button>
+            {/* Category hero */}
+            <div className="inv-cat-hero" style={{ '--c': cat.color } as any}>
+              <div className="inv-cat-hero-icon"
+                style={{ background: `${cat.color}15`, border: `1px solid ${cat.color}28` }}>
+                {cat.icon}
               </div>
-            )}
+              <div className="inv-cat-hero-text">
+                <h2>{cat.name}</h2>
+                <p>{cat.description}</p>
+              </div>
+              <div className="inv-cat-hero-count">
+                <div className="inv-cat-count-num" style={{ color: cat.color }}>
+                  {total != null ? fmt(total) : '—'}
+                </div>
+                <div className="inv-cat-count-label">nodes</div>
+              </div>
+              <button onClick={() => openInGraph()} className="inv-view-graph-btn">
+                <ArrowUpRight size={13} /> View in Graph
+              </button>
+            </div>
 
-            {/* Subcategories */}
+            {/* Subcategories — shown at every non-leaf level */}
             {subcats.length > 0 && (
-              <div className="inv-subcats-section">
-                <div className="inv-section-title">Subcategories</div>
+              <div className="inv-subcats">
+                <div className="inv-section-label">Subcategories</div>
                 <div className="inv-subcat-grid">
                   {subcats.map((sc, i) => (
                     <motion.button
                       key={sc.id}
                       className="inv-subcat-card"
                       style={{ '--c': sc.color } as any}
-                      onClick={() => { setPage(0); setLoaded([]); onNavigate(sc.id) }}
-                      initial={{ opacity: 0, y: 6 }}
+                      onClick={() => onNavigate(sc.id)}
+                      initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04 }}
-                      whileHover={{ y: -1 }}
+                      whileHover={{ y: -2 }}
                     >
                       <span className="inv-subcat-icon">{sc.icon}</span>
                       <div className="inv-subcat-body">
                         <div className="inv-subcat-name">{sc.name}</div>
                         <div className="inv-subcat-desc">{sc.description}</div>
                       </div>
-                      <div className="inv-subcat-count-block">
-                        <div className="inv-subcat-count" style={{ color: sc.color }}>
-                          {sc.count !== null && sc.count !== undefined ? fmt(sc.count) : '—'}
+                      <div className="inv-subcat-right">
+                        <div className="inv-subcat-num" style={{ color: sc.color }}>
+                          {sc.count != null ? fmt(sc.count) : '—'}
                         </div>
-                        <div className="inv-subcat-count-label">nodes</div>
+                        <div className="inv-subcat-label">nodes</div>
                       </div>
-                      <ChevronRight size={13} className="inv-subcat-arrow" />
+                      <ChevronRight size={13} className="inv-subcat-caret" />
                     </motion.button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Node table */}
-            <div className="inv-nodes-section">
-              <div className="inv-section-header">
-                <div className="inv-section-title">
-                  {subcats.length > 0 ? 'All nodes in this category' : 'Nodes'}
-                </div>
-                <div className="inv-section-meta">
-                  {loadedNodes.length > 0 && (
+            {/* Node list — shown at leaf categories (no subcats) */}
+            {isLeaf && (
+              <div className="inv-nodes">
+                <div className="inv-section-header">
+                  <div className="inv-section-label">Nodes</div>
+                  {nodes.length > 0 && (
                     <span className="inv-showing">
-                      Showing {loadedNodes.length} of {total !== null ? fmt(total) : '?'}
+                      {nodes.length} of {fmt(total)}
                     </span>
                   )}
                 </div>
+
+                <div className="inv-node-list">
+                  {nodes.map((node, i) => (
+                    <motion.div
+                      key={node.id ?? node.path ?? i}
+                      className={`inv-node-row ${selectedNode === node ? 'inv-node-selected' : ''}`}
+                      style={{ '--c': cat.color } as any}
+                      onClick={() => setSelected(node === selectedNode ? null : node)}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: Math.min(i, 15) * 0.015 }}
+                    >
+                      <div className="inv-node-icon">{cat.icon}</div>
+                      <div className="inv-node-primary">
+                        <div className="inv-node-name">
+                          {node.name ?? node.path?.split(/[/\\]/).pop() ?? node.id ?? 'Unknown'}
+                        </div>
+                        <div className="inv-node-path">
+                          {node.path ?? node.source_connector ?? ''}
+                        </div>
+                      </div>
+                      <ChevronRight size={13} className="inv-node-caret" />
+                    </motion.div>
+                  ))}
+
+                  {!nodes.length && !isLoading && (
+                    <div className="inv-empty-list">No nodes found in this category</div>
+                  )}
+                </div>
+
+                {/* Load more */}
+                {hasMore && (
+                  <div className="inv-loadmore-row">
+                    <button
+                      className="inv-loadmore-btn"
+                      onClick={() => setPage(p => p + 1)}
+                      disabled={isFetching}
+                    >
+                      {isFetching
+                        ? <><span className="inv-spinner" /> Loading…</>
+                        : <>Load {Math.min(PAGE_SIZE, total - nodes.length)} more</>
+                      }
+                    </button>
+                    <span className="inv-loadmore-meta">{nodes.length} / {fmt(total)} loaded</span>
+                  </div>
+                )}
+                {!hasMore && nodes.length > 0 && (
+                  <div className="inv-all-done">All {fmt(total)} nodes loaded</div>
+                )}
               </div>
-
-              {cols.length > 0 && loadedNodes.length > 0 ? (
-                <div className="inv-table-wrap">
-                  <table className="inv-table">
-                    <thead>
-                      <tr>
-                        {cols.map(c => (
-                          <th key={c.key} style={{ minWidth: c.width }}>{c.label}</th>
-                        ))}
-                        <th className="inv-th-action" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loadedNodes.map((node, i) => (
-                        <motion.tr
-                          key={node.id ?? node.path ?? i}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: Math.min(i, 10) * 0.02 }}
-                          className="inv-tr"
-                        >
-                          {cols.map(col => (
-                            <td key={col.key} className={`inv-td inv-td-${col.kind}`}>
-                              <CellValue kind={col.kind} value={node[col.key]} />
-                            </td>
-                          ))}
-                          <td className="inv-td-action">
-                            <button
-                              className="inv-node-link"
-                              onClick={() => navigate(`/query?q=${encodeURIComponent(`MATCH (f) WHERE id(f) = '${node.id}' RETURN f`)}`)}
-                              title="View in graph"
-                            >
-                              <ExternalLink size={11} />
-                            </button>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : isLoading ? null : (
-                <div className="inv-empty-table">No nodes found in this category</div>
-              )}
-
-              {/* Load more */}
-              {hasMore && (
-                <div className="inv-load-more-wrap">
-                  <button
-                    className="inv-load-more"
-                    onClick={loadMore}
-                    disabled={isFetching}
-                  >
-                    {isFetching
-                      ? <><span className="inv-spinner" /> Loading…</>
-                      : <>Load {Math.min(PAGE_SIZE, total - loadedNodes.length)} more nodes</>
-                    }
-                  </button>
-                  <span className="inv-load-progress">
-                    {loadedNodes.length} / {fmt(total)} loaded
-                  </span>
-                </div>
-              )}
-
-              {!hasMore && loadedNodes.length > 0 && (
-                <div className="inv-all-loaded">
-                  All {fmt(total)} nodes loaded
-                </div>
-              )}
-            </div>
+            )}
           </motion.div>
         </AnimatePresence>
       )}
+
+      {/* Node detail drawer */}
+      <AnimatePresence>
+        {selectedNode && (
+          <NodeDrawer
+            node={selectedNode}
+            categoryColor={cat?.color}
+            categoryIcon={cat?.icon}
+            categoryName={cat?.name}
+            onClose={() => setSelected(null)}
+            onViewInGraph={() => {
+              const id = selectedNode.id ?? selectedNode._id
+              const nodeType = cat?.id?.includes('people') ? 'Person' : 'File'
+              const q = id
+                ? `MATCH (f:${nodeType}) WHERE id(f) = '${id}' RETURN f`
+                : data?.category?.cypher?.replace('RETURN f', 'RETURN f LIMIT 100')
+              openInGraph(encodeURIComponent(q ?? ''))
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-// ── Cell renderer ──────────────────────────────────────────────────────────────
+// ── Node drawer ────────────────────────────────────────────────────────────────
 
-function CellValue({ kind, value }) {
-  if (value === null || value === undefined) return <span className="inv-cell-null">—</span>
+function NodeDrawer({ node, categoryColor, categoryIcon, categoryName, onClose, onViewInGraph }) {
+  const entries = Object.entries(node).filter(([k]) =>
+    !k.startsWith('_') && k !== 'tenant_id' && k !== 'elementId'
+  )
 
-  if (kind === 'bool') {
-    return value
-      ? <span className="inv-badge inv-badge-green">Yes</span>
-      : <span className="inv-badge inv-badge-gray">No</span>
-  }
-  if (kind === 'badge') {
-    return <span className="inv-badge inv-badge-blue">{String(value)}</span>
-  }
-  if (kind === 'size') {
-    return <span className="inv-cell-mono">{fmtSize(Number(value))}</span>
-  }
-  if (kind === 'date') {
-    const d = new Date(value)
-    return isNaN(d.getTime())
-      ? <span className="inv-cell-mono">{String(value)}</span>
-      : <span className="inv-cell-date" title={d.toISOString()}>{d.toLocaleDateString()}</span>
-  }
-  if (kind === 'path') {
-    const s = String(value)
-    const parts = s.split(/[/\\]/)
-    const short = parts.length > 3
-      ? '…/' + parts.slice(-2).join('/')
-      : s
-    return <span className="inv-cell-path" title={s}>{short}</span>
-  }
-  // text default
-  const s = String(value)
-  return <span className="inv-cell-text" title={s.length > 60 ? s : undefined}>
-    {s.length > 60 ? s.slice(0, 60) + '…' : s}
-  </span>
+  return (
+    <>
+      {/* Backdrop */}
+      <motion.div
+        className="inv-drawer-backdrop"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+      {/* Drawer */}
+      <motion.aside
+        className="inv-drawer"
+        initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+      >
+        <div className="inv-drawer-header">
+          <div className="inv-drawer-cat">
+            <span>{categoryIcon}</span>
+            <span className="inv-drawer-cat-name">{categoryName}</span>
+          </div>
+          <button onClick={onClose} className="inv-drawer-close"><X size={15} /></button>
+        </div>
+
+        <div className="inv-drawer-title">
+          {node.name ?? node.path?.split(/[/\\]/).pop() ?? node.id ?? 'Node'}
+        </div>
+        {node.path && (
+          <div className="inv-drawer-path">{node.path}</div>
+        )}
+
+        <button
+          className="inv-drawer-graph-btn"
+          style={{ '--c': categoryColor } as any}
+          onClick={onViewInGraph}
+        >
+          <ArrowUpRight size={14} /> View in Security Graph
+        </button>
+
+        <div className="inv-drawer-divider" />
+
+        <div className="inv-drawer-props">
+          {entries.map(([k, v]) => {
+            if (v === null || v === undefined) return null
+            return (
+              <div key={k} className="inv-drawer-prop">
+                <div className="inv-drawer-prop-key">{k.replace(/_/g, ' ')}</div>
+                <div className="inv-drawer-prop-val">
+                  <PropValue k={k} v={v} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </motion.aside>
+    </>
+  )
 }
 
-// ── Category card (root) ───────────────────────────────────────────────────────
+function PropValue({ k, v }) {
+  const s = String(v)
+  if (typeof v === 'boolean')
+    return <span className={`inv-prop-badge ${v ? 'inv-badge-yes' : 'inv-badge-no'}`}>{v ? 'Yes' : 'No'}</span>
+  if (k.endsWith('_at') || k.endsWith('_date') || k === 'modified' || k === 'created')
+    return <span className="inv-prop-date">{new Date(s).toLocaleString()}</span>
+  if (k === 'size' || k.endsWith('_size') || k.endsWith('_bytes'))
+    return <span className="inv-prop-mono">{fmtSize(Number(v))}</span>
+  if (s.length > 80)
+    return <span className="inv-prop-long" title={s}>{s.slice(0, 80)}…</span>
+  return <span className="inv-prop-text">{s}</span>
+}
+
+// ── Category card ──────────────────────────────────────────────────────────────
 
 function CategoryCard({ cat, index, onClick }) {
   return (
@@ -413,7 +442,7 @@ function CategoryCard({ cat, index, onClick }) {
       <div className="inv-card-body">
         <div className="inv-card-name">{cat.name}</div>
         <div className="inv-card-desc">{cat.description}</div>
-        {cat.has_children && <div className="inv-card-drill">subcategories available</div>}
+        {cat.has_children && <span className="inv-card-drill-hint">drill down →</span>}
       </div>
       <div className="inv-card-count-block">
         <div className="inv-card-count" style={{ color: cat.count != null ? cat.color : '#35354a' }}>
@@ -457,17 +486,16 @@ function LoadingSkeleton() {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function fmt(n: number) {
+function fmt(n) {
   if (!n && n !== 0) return '—'
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000)     return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`
   return n.toLocaleString()
 }
-
-function fmtSize(bytes: number) {
-  if (!bytes) return '—'
-  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`
-  if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`
-  if (bytes >= 1e3) return `${(bytes / 1e3).toFixed(0)} KB`
-  return `${bytes} B`
+function fmtSize(b) {
+  if (!b) return '—'
+  if (b >= 1e9) return `${(b/1e9).toFixed(1)} GB`
+  if (b >= 1e6) return `${(b/1e6).toFixed(1)} MB`
+  if (b >= 1e3) return `${(b/1e3).toFixed(0)} KB`
+  return `${b} B`
 }
