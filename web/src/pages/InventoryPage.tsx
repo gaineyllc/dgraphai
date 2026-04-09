@@ -16,19 +16,26 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import {
   Search, ChevronRight, Database, Layers,
-  X, ExternalLink, ArrowUpRight, Sparkles,
+  X, ArrowUpRight, Sparkles,
   AlertCircle, Loader2, CornerDownLeft
 } from 'lucide-react'
+import { InventoryDrillDown } from '../components/InventoryDrillDown'
 import './InventoryPage.css'
 
 // ── API ────────────────────────────────────────────────────────────────────────
 
 const api = {
-  list:    ()                              => fetch('/api/inventory').then(r => r.json()),
-  detail:  (id: string, page: number, ps = 25) =>
+  list:       ()                              => fetch('/api/inventory').then(r => r.json()),
+  detail:     (id: string, page: number, ps = 25) =>
     fetch(`/api/inventory/${id}?page=${page}&page_size=${ps}`).then(r => r.json()),
-  search:  (q: string)                    => fetch(`/api/inventory/search?q=${encodeURIComponent(q)}`).then(r => r.json()),
-  suggest: (q: string)                    => fetch(`/api/inventory/search/suggest?q=${encodeURIComponent(q)}&limit=8`).then(r => r.json()),
+  filterAttrs:(id: string)                  => fetch(`/api/inventory/${id}/filterable-attributes`).then(r => r.json()),
+  filtered:   (id: string, filters: any[], page: number, ps = 25) =>
+    fetch(`/api/inventory/${id}/filtered?page=${page}&page_size=${ps}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ filters }),
+    }).then(r => r.json()),
+  search:     (q: string)                   => fetch(`/api/inventory/search?q=${encodeURIComponent(q)}`).then(r => r.json()),
+  suggest:    (q: string)                   => fetch(`/api/inventory/search/suggest?q=${encodeURIComponent(q)}&limit=8`).then(r => r.json()),
 }
 
 // ── Entry point ────────────────────────────────────────────────────────────────
@@ -41,7 +48,7 @@ export function InventoryPage() {
     id ? setSearchParams({ cat: id }) : setSearchParams({})
 
   return activeCat
-    ? <DrillDown categoryId={activeCat} onNavigate={navigateTo} />
+    ? <InventoryDrillDown categoryId={activeCat} onNavigate={navigateTo} />
     : <InventoryRoot onNavigate={navigateTo} />
 }
 

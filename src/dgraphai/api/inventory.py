@@ -20,7 +20,64 @@ from src.dgraphai.inventory.taxonomy import (
 
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])
 
-PAGE_SIZE = 25   # default nodes per page
+PAGE_SIZE = 25
+
+
+# ── Attribute filter helpers ──────────────────────────────────────────────────
+
+def _apply_attribute_filters(cypher: str, filters: list[dict]) -> str:
+    """
+    Inject attribute WHERE clauses into a category Cypher query.
+    filters: [{field, op, value}]
+    Returns the modified Cypher and a human-readable description.
+    """
+    import re
+    if not filters:
+        return cypher
+
+    clauses = []
+    alias = "f"  # all category Cypherrs use 'f' as the node alias
+
+    for f in filters:
+        field = re.sub(r'[^\w]', '', f.get("field", ""))
+        op    = f.get("op", "=")
+        val   = f.get("value", "")
+
+        if not field:
+            continue
+        if op in ("IS NULL", "IS NOT NULL"):
+            clauses.append(f"{alias}.{field} {op}")
+        elif op in ("CONTAINS", "STARTS WITH", "ENDS WITH"):
+            safe_val = str(val).replace("'", "\\'")
+            clauses.append(f"{alias}.{field} {op} '{safe_val}'")
+        elif str(val).lower() in ("true", "false"):
+            clauses.append(f"{alias}.{field} {op} {str(val).lower()}")
+        else:
+            try:
+                float(val)
+                clauses.append(f"{alias}.{field} {op} {val}")
+            except (ValueError, TypeError):
+                safe_val = str(val).replace("'", "\\'")
+                clauses.append(f"{alias}.{field} {op} '{safe_val}'")
+
+    if not clauses:
+        return cypher
+
+    extra = " AND ".join(clauses)
+    # Inject into existing WHERE clause or add one before RETURN
+    if re.search(r'\bWHERE\b', cypher, re.IGNORECASE):
+        cypher = re.sub(
+            r'(\bRETURN\b)',
+            f'AND {extra} \\1',
+            cypher, count=1, flags=re.IGNORECASE
+        )
+    else:
+        cypher = re.sub(
+            r'(\bRETURN\b)',
+            f'WHERE {extra} \\1',
+            cypher, count=1, flags=re.IGNORECASE
+        )
+    return cypher
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -111,6 +168,102 @@ async def list_inventory(
             for group, cats in groups.items()
         },
         "total_categories": len(top_cats),
+    }
+
+
+@router.get("/{category_id}/filterable-attributes")
+async def get_filterable_attributes(
+    category_id: str,
+    auth: AuthContext = Depends(get_auth_context),
+    db:   AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Returns the attribute fields that make sense to filter on for this
+    category, with suggested values sampled from the live graph.
+    Used to populate the inline attribute filter panel.
+    """
+    cat = get_category(category_id)
+    if not cat:
+        raise HTTPException(status_code=404, detail=f"Category {category_id!r} not found")
+
+    # Return column schema from taxonomy + common ops per type
+    filter_fields = []
+    for col in cat.columns:
+        if col.key in ("name", "path", "source_connector", "modified_at"):
+            continue  # skip structural columns — not useful as filters
+        ops = _ops_for_kind(col.kind)
+        filter_fields.append({
+            "key":   col.key,
+            "label": col.label,
+            "kind":  col.kind,
+            "ops":   ops,
+        })
+
+    return {"category_id": category_id, "fields": filter_fields}
+
+
+def _ops_for_kind(kind: str) -> list[str]:
+    if kind == "bool":      return ["= true", "= false"]
+    if kind == "num":       return ["=", ">", ">=", "<", "<=", "IS NOT NULL", "IS NULL"]
+    if kind == "size":      return [">", ">=", "<", "<="]
+    if kind == "date":      return [">", ">=", "<", "<=", "IS NOT NULL", "IS NULL"]
+    if kind == "badge":     return ["=", "<>", "IS NOT NULL", "IS NULL", "CONTAINS"]
+    return ["=", "<>", "CONTAINS", "STARTS WITH", "IS NOT NULL", "IS NULL"]
+
+
+@router.post("/{category_id}/filtered")
+async def get_filtered_nodes(
+    category_id: str,
+    body:        dict,
+    page:        int = Query(default=0, ge=0),
+    page_size:   int = Query(default=PAGE_SIZE, ge=1, le=200),
+    auth: AuthContext = Depends(get_auth_context),
+    db:   AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Run a category query with attribute filters applied.
+    body: { filters: [{field, op, value}] }
+    Returns filtered nodes + the Cypher query used (for 'View in Graph').
+    """
+    cat = get_category(category_id)
+    if not cat:
+        raise HTTPException(status_code=404, detail=f"Category {category_id!r} not found")
+
+    filters   = body.get("filters", [])
+    base_cypher = _apply_attribute_filters(cat.cypher, filters)
+    tid         = str(auth.tenant_id)
+    skip        = page * page_size
+    backend     = await _get_backend(auth.tenant_id, db)
+
+    import asyncio as _asyncio
+    async def get_count():
+        try:
+            async with backend:
+                rows = await backend.query(_count_cypher(base_cypher), {"tid": tid}, auth.tenant_id)
+                return rows[0].get("total", 0) if rows else 0
+        except Exception: return None
+
+    async def get_nodes():
+        try:
+            pq = _cypher_with_pagination(base_cypher, skip, page_size)
+            async with backend:
+                rows = await backend.query(pq, {"tid": tid}, auth.tenant_id)
+                return [_extract_node(r) for r in rows]
+        except Exception: return []
+
+    total, nodes = await _asyncio.gather(get_count(), get_nodes())
+
+    return {
+        "nodes":     nodes,
+        "cypher":    base_cypher,
+        "query_url": f"/query?q={urllib.parse.quote(base_cypher)}",
+        "pagination": {
+            "page":      page,
+            "page_size": page_size,
+            "total":     total,
+            "has_more":  total is not None and (skip + page_size) < total,
+        },
+        "active_filters": filters,
     }
 
 
