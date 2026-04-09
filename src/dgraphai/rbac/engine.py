@@ -202,6 +202,49 @@ def build_scope_filter(assignments: list[Any], resource_type: str) -> dict[str, 
     return {"operator": "OR", "conditions": filters} if filters else None
 
 
+async def assign_builtin_role(
+    user_id: "UUID",
+    tenant_id: "UUID",
+    role_name: str,
+    db: "AsyncSession",
+) -> None:
+    """
+    Assign a built-in role to a user, creating the Role record if needed.
+    Used during signup and invite acceptance.
+    """
+    # Find or create the role
+    result = await db.execute(
+        select(Role).where(Role.tenant_id == tenant_id, Role.name == role_name)
+    )
+    role = result.scalar_one_or_none()
+    if not role:
+        role = Role(
+            tenant_id   = tenant_id,
+            name        = role_name,
+            role_type   = role_name if role_name in ("admin", "analyst", "viewer", "agent") else "custom",
+            permissions = list(BUILTIN_PERMISSIONS.get(role_name, set())),
+            is_system   = True,
+        )
+        db.add(role)
+        await db.flush()
+
+    # Assign if not already assigned
+    existing = await db.execute(
+        select(RoleAssignment).where(
+            RoleAssignment.user_id  == user_id,
+            RoleAssignment.role_id  == role.id,
+        )
+    )
+    if not existing.scalar_one_or_none():
+        assignment = RoleAssignment(
+            tenant_id = tenant_id,
+            user_id   = user_id,
+            role_id   = role.id,
+        )
+        db.add(assignment)
+        await db.flush()
+
+
 def scope_filter_to_cypher(scope_filter: dict | None) -> str:
     """
     Convert a scope filter to a Cypher WHERE clause fragment.

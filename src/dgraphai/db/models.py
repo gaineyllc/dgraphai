@@ -11,7 +11,7 @@ from typing import Optional
 
 from sqlalchemy import (
     Boolean, Column, DateTime, Enum, ForeignKey,
-    JSON, String, Text, UniqueConstraint, Index
+    Integer, JSON, String, Text, UniqueConstraint, Index
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -95,6 +95,9 @@ class User(Base):
     idp_provider    = Column(String(64))        # which OIDCConfig authenticated them
     is_active       = Column(Boolean, default=True)
     last_login      = Column(DateTime(timezone=True))
+    email_verified  = Column(Boolean, default=False)
+    role            = Column(String(32), default="member")   # quick access role label
+    name            = Column(String(256))                    # alias for display_name
     created_at      = Column(DateTime(timezone=True), default=now_utc)
 
     tenant          = relationship("Tenant", back_populates="users")
@@ -196,3 +199,142 @@ class ScannerAgent(Base):
     __table_args__ = (
         UniqueConstraint("tenant_id", "name", name="uq_tenant_scanner_name"),
     )
+
+
+# ── Local auth models ────────────────────────────────────────────────────────────────
+
+class LocalCredential(Base):
+    """Email/password credential for local auth (alternative to OIDC)."""
+    __tablename__ = "local_credentials"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id          = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    password_hash    = Column(String(256), nullable=False)
+    failed_attempts  = Column(Integer, default=0)
+    locked_until     = Column(DateTime(timezone=True))
+    last_failed_at   = Column(DateTime(timezone=True))
+    last_login_at    = Column(DateTime(timezone=True))
+    updated_at       = Column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
+
+
+class EmailVerificationToken(Base):
+    __tablename__ = "email_verification_tokens"
+
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token_hash = Column(String(256), nullable=False, unique=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at    = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), default=now_utc)
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token_hash = Column(String(256), nullable=False, unique=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at    = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), default=now_utc)
+
+
+class MFAConfig(Base):
+    """TOTP MFA configuration per user."""
+    __tablename__ = "mfa_configs"
+
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id      = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    secret       = Column(String(256), nullable=False)    # base32 TOTP secret (encrypted at rest)
+    backup_codes = Column(JSON, default=list)             # hashed 8-char codes
+    is_active    = Column(Boolean, default=False)
+    enrolled_at  = Column(DateTime(timezone=True))
+    disabled_at  = Column(DateTime(timezone=True))
+    created_at   = Column(DateTime(timezone=True), default=now_utc)
+
+
+class UserSession(Base):
+    """Active user sessions for session management and revocation."""
+    __tablename__ = "user_sessions"
+
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    tenant_id  = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    ip_address = Column(String(45))
+    user_agent = Column(String(512))
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), default=now_utc)
+
+    __table_args__ = (Index("ix_user_sessions_user", "user_id", "revoked_at"),)
+
+
+class APIKey(Base):
+    """Personal access tokens for programmatic API access."""
+    __tablename__ = "api_keys"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id     = Column(UUID(as_uuid=True), ForeignKey("users.id",   ondelete="CASCADE"), nullable=False)
+    tenant_id   = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    name        = Column(String(256), nullable=False)
+    key_hash    = Column(String(256), nullable=False, unique=True)  # SHA-256, never store plaintext
+    key_prefix  = Column(String(16),  nullable=False)               # first 12 chars for display
+    expires_at  = Column(DateTime(timezone=True))
+    revoked_at  = Column(DateTime(timezone=True))
+    last_used_at = Column(DateTime(timezone=True))
+    created_at  = Column(DateTime(timezone=True), default=now_utc)
+
+    __table_args__ = (Index("ix_api_keys_hash", "key_hash"),)
+
+
+class AuditLog(Base):
+    """
+    Immutable audit log — every significant action recorded here.
+    Written append-only; no updates or deletes allowed via ORM.
+    For SOC 2 Type II compliance.
+    """
+    __tablename__ = "audit_logs"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id   = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    user_id     = Column(UUID(as_uuid=True), nullable=True)    # None for system events
+    action      = Column(String(128), nullable=False)          # e.g. "user.login", "query.run"
+    resource    = Column(String(128))                          # e.g. "connector:abc123"
+    details     = Column(JSON, default=dict)                   # action-specific context
+    ip_address  = Column(String(45))
+    user_agent  = Column(String(512))
+    status      = Column(String(16), default="success")       # success | failure | error
+    created_at  = Column(DateTime(timezone=True), default=now_utc, nullable=False)
+
+    __table_args__ = (
+        Index("ix_audit_tenant_created", "tenant_id", "created_at"),
+        Index("ix_audit_user",           "user_id",   "created_at"),
+    )
+
+
+class UserInvite(Base):
+    """Pending user invitations."""
+    __tablename__ = "user_invites"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id   = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    invited_by  = Column(UUID(as_uuid=True), ForeignKey("users.id",   ondelete="SET NULL"))
+    email       = Column(String(256), nullable=False)
+    role        = Column(String(32), default="analyst")
+    token_hash  = Column(String(256), nullable=False, unique=True)
+    expires_at  = Column(DateTime(timezone=True), nullable=False)
+    used_at     = Column(DateTime(timezone=True))
+    created_at  = Column(DateTime(timezone=True), default=now_utc)
+
+
+class GDPRErasureJob(Base):
+    """Tracks GDPR right-to-erasure requests."""
+    __tablename__ = "gdpr_erasure_jobs"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id     = Column(String(256), nullable=False)    # keep as string (user may be deleted)
+    tenant_id   = Column(String(256), nullable=False)
+    status      = Column(String(32), default="pending")  # pending | running | complete | failed
+    requested_at = Column(DateTime(timezone=True), default=now_utc)
+    completed_at = Column(DateTime(timezone=True))
+    error        = Column(Text)

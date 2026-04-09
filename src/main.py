@@ -25,6 +25,9 @@ from src.dgraphai.api.stream      import router as stream_router, hf_router
 from src.dgraphai.api.alerts      import router as alerts_router
 from src.dgraphai.api.compliance  import router as compliance_router
 from src.dgraphai.api.connectors_full import router as connectors_router
+from src.dgraphai.auth.local         import router as local_auth_router
+from src.dgraphai.api.users          import router as users_router
+from src.dgraphai.auth.audit         import audit_router
 from src.dgraphai.api.inventory       import router as inventory_router
 from src.dgraphai.api.inventory_search import router as inv_search_router
 from src.dgraphai.api.schema          import router as schema_router
@@ -54,6 +57,31 @@ app = FastAPI(
     redoc_url="/api/redoc" if __import__("os").getenv("dgraphai_ENABLE_DOCS") else None,
 )
 
+# Rate limiting middleware — protect auth endpoints
+from fastapi import Request as _Request
+from collections import defaultdict as _dd
+import time as _time
+
+_rate_store: dict = _dd(lambda: {"count": 0, "window": 0})
+
+@app.middleware("http")
+async def rate_limit_auth(request: _Request, call_next):
+    """Simple in-process rate limiter for auth endpoints."""
+    AUTH_ENDPOINTS = {"/api/auth/login", "/api/auth/signup", "/api/auth/forgot-password"}
+    if request.url.path in AUTH_ENDPOINTS:
+        ip  = request.client.host if request.client else "unknown"
+        key = f"rl:{ip}:{request.url.path}"
+        now = int(_time.time())
+        rec = _rate_store[key]
+        if now - rec["window"] > 60:          # new 1-minute window
+            rec["count"] = 0
+            rec["window"] = now
+        rec["count"] += 1
+        if rec["count"] > 10:                  # max 10 requests per minute per IP per endpoint
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=429, content={"detail": "Too many requests. Try again in a minute."})
+    return await call_next(request)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=__import__("os").getenv(
@@ -67,6 +95,9 @@ app.add_middleware(
 
 # Auth routes (no auth required)
 app.include_router(auth_router)
+app.include_router(local_auth_router)
+app.include_router(users_router)
+app.include_router(audit_router)
 
 # Protected API routes
 app.include_router(graph_router)
