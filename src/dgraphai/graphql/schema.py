@@ -197,7 +197,6 @@ def make_graphql_router(get_context) -> GraphQLRouter:
     return GraphQLRouter(
         schema,
         context_getter=get_context,
-        graphiql=True,   # enable GraphiQL IDE at /graphql
     )
 
 
