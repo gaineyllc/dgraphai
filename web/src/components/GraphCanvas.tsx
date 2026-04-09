@@ -59,6 +59,7 @@ interface Props {
   data: Subgraph
   selectedId?: string
   onNodeClick?: (node: GraphNode) => void
+  onNodeClickPos?: (node: GraphNode, pos: { x: number; y: number }) => void
   onNodeExpand?: (id: string) => void
   className?: string
 }
@@ -71,7 +72,8 @@ export function GraphCanvas({
   className = '',
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const cyRef = useRef<Core | null>(null)
+  const cyRef         = useRef<Core | null>(null)
+  const props         = { onNodeClickPos }   // capture for closure
 
   // Initialise Cytoscape once
   useEffect(() => {
@@ -150,11 +152,18 @@ export function GraphCanvas({
       onNodeExpand?.(node.id())
     })
 
-    // Single click to select
+    // Single click to select — also emit screen position for tooltip
     cy.on('tap', 'node', (e) => {
-      const node = e.target as NodeSingular
-      const data = node.data() as GraphNode
+      const node      = e.target as NodeSingular
+      const data      = node.data() as GraphNode
+      const renderedPos = e.renderedPosition ?? { x: 0, y: 0 }
+      const container = containerRef.current?.getBoundingClientRect()
+      const screenPos = {
+        x: (container?.left ?? 0) + renderedPos.x,
+        y: (container?.top  ?? 0) + renderedPos.y,
+      }
       onNodeClick?.(data)
+      ;(props as any).onNodeClickPos?.(data, screenPos)
     })
 
     // Hover highlight

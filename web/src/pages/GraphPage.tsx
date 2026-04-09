@@ -4,18 +4,25 @@
  * Center: interactive Cytoscape graph
  * Right panel: node properties (on selection)
  */
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { AnimatePresence } from 'framer-motion'
+import { NodeTooltip } from '../components/NodeTooltip'
+import { InspectionPane } from '../components/InspectionPane'
+import '../components/inspection.css'
 import { useQuery } from '@tanstack/react-query'
 import { Search, X, ZoomIn, ZoomOut, Maximize2, ChevronRight } from 'lucide-react'
 import { GraphCanvas } from '../components/GraphCanvas'
 import { graphApi, type GraphNode, type Subgraph, type SearchResult } from '../lib/api'
 
 export function GraphPage() {
-  const [subgraph, setSubgraph] = useState<Subgraph>({ nodes: [], edges: [] })
+  const [subgraph, setSubgraph]         = useState<Subgraph>({ nodes: [], edges: [] })
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [tooltipNode, setTooltipNode]   = useState<GraphNode | null>(null)
+  const [tooltipPos, setTooltipPos]     = useState({ x: 0, y: 0 })
+  const [inspecting, setInspecting]     = useState<GraphNode | null>(null)
+  const [searchTerm, setSearchTerm]     = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
-  const [searching, setSearching] = useState(false)
+  const [searching, setSearching]       = useState(false)
 
   // Graph stats
   const { data: stats } = useQuery({
@@ -131,8 +138,17 @@ export function GraphPage() {
           <GraphCanvas
             data={subgraph}
             selectedId={selectedNode?.id}
-            onNodeClick={setSelectedNode}
+            onNodeClick={(node) => {
+              setSelectedNode(node)
+              // Show tooltip at last mouse position
+              setTooltipNode(node)
+            }}
             onNodeExpand={loadNode}
+            onNodeClickPos={(node, pos) => {
+              setSelectedNode(node)
+              setTooltipNode(node)
+              setTooltipPos(pos)
+            }}
             className="w-full h-full"
           />
         )}
@@ -158,10 +174,28 @@ export function GraphPage() {
         )}
       </div>
 
-      {/* ── Right panel: node details ── */}
-      {selectedNode && (
-        <NodeDetail node={selectedNode} onClose={() => setSelectedNode(null)} onExpand={loadNode} />
-      )}
+      {/* Floating tooltip — shows on node click */}
+      <AnimatePresence>
+        {tooltipNode && (
+          <NodeTooltip
+            node={tooltipNode}
+            position={tooltipPos}
+            onClose={() => setTooltipNode(null)}
+            onDetails={() => { setInspecting(tooltipNode); setTooltipNode(null) }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Full inspection pane — slides in from right, draggable */}
+      <AnimatePresence>
+        {inspecting && (
+          <InspectionPane
+            node={inspecting}
+            onClose={() => setInspecting(null)}
+            onExpand={loadNode}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
