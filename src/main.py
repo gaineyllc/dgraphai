@@ -68,30 +68,9 @@ app = FastAPI(
     redoc_url="/api/redoc" if __import__("os").getenv("dgraphai_ENABLE_DOCS") else None,
 )
 
-# Rate limiting middleware — protect auth endpoints
-from fastapi import Request as _Request
-from collections import defaultdict as _dd
-import time as _time
-
-_rate_store: dict = _dd(lambda: {"count": 0, "window": 0})
-
-@app.middleware("http")
-async def rate_limit_auth(request: _Request, call_next):
-    """Simple in-process rate limiter for auth endpoints."""
-    AUTH_ENDPOINTS = {"/api/auth/login", "/api/auth/signup", "/api/auth/forgot-password"}
-    if request.url.path in AUTH_ENDPOINTS:
-        ip  = request.client.host if request.client else "unknown"
-        key = f"rl:{ip}:{request.url.path}"
-        now = int(_time.time())
-        rec = _rate_store[key]
-        if now - rec["window"] > 60:          # new 1-minute window
-            rec["count"] = 0
-            rec["window"] = now
-        rec["count"] += 1
-        if rec["count"] > 10:                  # max 10 requests per minute per IP per endpoint
-            from fastapi.responses import JSONResponse
-            return JSONResponse(status_code=429, content={"detail": "Too many requests. Try again in a minute."})
-    return await call_next(request)
+# Redis-backed rate limiting (works across all API replicas)
+from src.dgraphai.middleware.rate_limit import rate_limit_middleware
+app.middleware("http")(rate_limit_middleware)
 
 app.add_middleware(
     CORSMiddleware,
