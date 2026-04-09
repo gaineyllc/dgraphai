@@ -272,23 +272,83 @@ async def health_ui() -> str:
 # ── Backend sync loop ─────────────────────────────────────────────────────────
 
 async def sync_loop() -> None:
-    """Periodically check backend connectivity and trigger scans."""
-    while True:
-        # Check backend connectivity
-        if BACKEND_URL and API_KEY:
-            try:
-                async with httpx.AsyncClient(timeout=10) as client:
-                    r = await client.get(
-                        f"{BACKEND_URL}/api/health",
-                        headers={"X-Scanner-Key": API_KEY},
-                    )
-                    state.backend_reachable = r.status_code == 200
-                    data = r.json()
-                    state.backend_version = data.get("version", "unknown")
-            except Exception:
-                state.backend_reachable = False
+    """Heartbeat, job polling, and offline queue flushing."""
+    from src.sync.client import SyncClient
 
-        await asyncio.sleep(60)  # Check every minute
+    client = SyncClient(
+        backend_url = BACKEND_URL,
+        api_key     = API_KEY,
+        scanner_id  = os.environ.get("DGRAPHAI_SCANNER_ID", ""),
+        tenant_id   = os.environ.get("DGRAPHAI_TENANT_ID", ""),
+    )
+
+    while True:
+        # 1. Heartbeat
+        if BACKEND_URL and API_KEY:
+            health = {
+                "version":      state.version,
+                "platform":     sys.platform,
+                "uptime_secs":  int((datetime.now(timezone.utc) - state.started_at).total_seconds()),
+                "files_indexed": state.files_indexed,
+                "errors":       state.errors,
+                "connectors":   state.connectors,
+                "scanning":     state.current_scan == "running",
+            }
+            ok = await client.heartbeat(health)
+            state.backend_reachable = ok
+            if ok:
+                # Try to get backend version
+                try:
+                    async with httpx.AsyncClient(timeout=5) as hc:
+                        r = await hc.get(
+                            f"{BACKEND_URL}/api/health",
+                            headers={"X-Scanner-Key": API_KEY},
+                        )
+                        state.backend_version = r.json().get("version", "unknown")
+                except Exception:
+                    pass
+
+        # 2. Flush offline queue if backend reachable
+        if state.backend_reachable:
+            flushed = await client.flush_queue()
+            if flushed:
+                pass  # already logged in flush_queue
+
+        # 3. Poll for jobs (simple polling — upgrade to WebSocket later)
+        if state.backend_reachable and state.current_scan != "running":
+            jobs = await client.poll_jobs()
+            for job in jobs:
+                asyncio.create_task(_run_job(job, client))
+
+        await asyncio.sleep(60)
+
+
+async def _run_job(job: dict, client) -> None:
+    """Execute a scan job dispatched from the backend."""
+    from src.connectors.local import LocalConnector
+    from src.connectors.smb   import SMBConnector
+
+    state.current_scan = "running"
+    uri = job.get("source_uri", "")
+    connector_id = job.get("connector_id", "unknown")
+    job_id = job.get("job_id", str(uuid.uuid4()) if True else "")
+
+    try:
+        if uri.startswith("smb://"):
+            connector = SMBConnector(connector_id, uri, job.get("options", {}))
+        else:
+            connector = LocalConnector(connector_id, uri, job.get("options", {}))
+
+        stats = await connector.scan_and_sync(client, job_id)
+        state.files_indexed += stats.get("total_files", 0)
+        state.errors        += stats.get("total_errors", 0)
+        state.last_sync        = datetime.now(timezone.utc)
+        state.last_sync_status = "success"
+    except Exception as e:
+        state.errors       += 1
+        state.last_sync_status = "error"
+    finally:
+        state.current_scan = None
 
 
 async def startup() -> None:

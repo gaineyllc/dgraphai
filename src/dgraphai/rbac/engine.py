@@ -116,12 +116,14 @@ async def load_user_permissions(
     return role_names, _expand_permissions(permissions)
 
 
-def has_permission(permission: str) -> Any:
+def require_permission(permission: str):
     """
     FastAPI dependency factory — requires a specific permission.
+    Returns a callable suitable for use with Depends().
 
     Usage:
-        @router.get("/sensitive", dependencies=[Depends(has_permission("graph:query"))])
+        @router.get("/sensitive")
+        async def endpoint(auth = Depends(require_permission("graph:query"))):
     """
     from src.dgraphai.auth.oidc import get_auth_context, AuthContext
 
@@ -133,11 +135,12 @@ def has_permission(permission: str) -> Any:
             )
         return auth
 
-    return Depends(_check)
+    return _check
 
 
-def require_permissions(*permissions: str) -> Any:
-    """Require ALL of the listed permissions."""
+# Alias for multi-permission check
+def require_permissions(*permissions: str):
+    """Require ALL of the listed permissions. Returns a callable for Depends()."""
     from src.dgraphai.auth.oidc import get_auth_context, AuthContext
 
     async def _check(auth: AuthContext = Depends(get_auth_context)) -> AuthContext:
@@ -149,7 +152,7 @@ def require_permissions(*permissions: str) -> Any:
             )
         return auth
 
-    return Depends(_check)
+    return _check
 
 
 def _is_allowed(user_perms: set[str], required: str) -> bool:

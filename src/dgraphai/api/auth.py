@@ -47,6 +47,7 @@ async def list_oidc_configs(
     db: AsyncSession = Depends(get_db),
 ) -> list[dict[str, Any]]:
     """List OIDC providers for this tenant (admin only)."""
+    _ = auth  # permission enforced by dependency
     result = await db.execute(
         select(OIDCConfig).where(OIDCConfig.tenant_id == auth.tenant_id)
     )
@@ -74,6 +75,7 @@ async def add_oidc_config(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Configure a new OIDC identity provider for this tenant (admin only)."""
+    _ = auth  # permission enforced by dependency
     # Encrypt client_secret before storing
     encrypted_secret = _encrypt_secret(req.client_secret)
 

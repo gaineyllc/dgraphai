@@ -17,6 +17,7 @@ from src.dgraphai.api.indexer import router as indexer_router
 from src.dgraphai.api.actions import router as actions_router
 from src.dgraphai.api.tenants import router as tenants_router
 from src.dgraphai.api.auth    import router as auth_router
+from src.dgraphai.api.scanner import router as scanner_router
 from src.dgraphai.db.session  import create_tables
 from src.dgraphai.core.config import API_HOST, API_PORT
 
@@ -57,6 +58,7 @@ app.include_router(auth_router)
 
 # Protected API routes
 app.include_router(graph_router)
+app.include_router(scanner_router)  # scanner agent endpoints
 app.include_router(mounts_router)
 app.include_router(indexer_router)
 app.include_router(actions_router)
