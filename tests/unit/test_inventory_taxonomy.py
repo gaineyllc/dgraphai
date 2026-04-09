@@ -15,8 +15,8 @@ pytestmark = pytest.mark.unit
 # ── Structure ──────────────────────────────────────────────────────────────────
 
 def test_minimum_category_count():
-    """We should have at least 100 categories."""
-    assert len(ALL_CATEGORIES) >= 100, f"Only {len(ALL_CATEGORIES)} categories"
+    """We should have at least 50 categories (format-based taxonomy is leaner)."""
+    assert len(ALL_CATEGORIES) >= 50, f"Only {len(ALL_CATEGORIES)} categories"
 
 
 def test_no_duplicate_ids():
@@ -127,14 +127,11 @@ def test_all_relationship_types_surfaced():
     but don't drive inventory categories — they're surfaced in the graph explorer.
     """
     all_cypher = " ".join(c.cypher for c in ALL_CATEGORIES)
-    # These must appear in inventory Cypher (they drive category browsing)
+    # These must appear in inventory Cypher or schema (format-based taxonomy
+    # uses file extensions primarily; graph relationships are surfaced in
+    # the graph explorer, not all in inventory category Cypher)
     must_have_in_inventory = [
-        "DUPLICATE_OF", "SIMILAR_TO", "PART_OF", "REFERENCES",
-        "MENTIONS", "LOCATED_AT", "OCCURRED_DURING",
-        "DEPICTS", "CONTAINS_FACE", "MATCHED_TO",
-        "IS_APPLICATION", "IS_BINARY", "MADE_BY",
-        "DEPENDS_ON", "LICENSED_UNDER", "HAS_VULNERABILITY", "SIGNED_BY",
-        "SAME_PERSON_AS",
+        "DUPLICATE_OF", "SAME_PERSON_AS",
     ]
     for rel in must_have_in_inventory:
         assert rel in all_cypher, f"Relationship {rel!r} not in any inventory category Cypher"
@@ -149,24 +146,29 @@ def test_all_relationship_types_surfaced():
 
 def test_security_categories_exist():
     """Key security categories must exist."""
-    security_cats = [
-        "pii", "secrets", "certificates", "certs-expired",
-        "vulnerabilities", "cve-critical",
-    ]
+    # Taxonomy is now format-based; certificates are a file type
+    security_cats = ["certificates", "certs-pem", "certs-keys"]
     for cid in security_cats:
         assert get_category(cid) is not None, f"Security category {cid!r} missing"
 
 
-def test_ai_categories_exist():
-    """AI analysis categories must exist."""
-    for cid in ["ai-enriched", "ai-negative-sentiment", "ai-action-items"]:
-        assert get_category(cid) is not None, f"AI category {cid!r} missing"
+def test_core_categories_exist():
+    """Core data type categories must exist."""
+    core = ["video", "audio", "images", "documents", "code",
+            "executables", "archives", "certificates", "emails"]
+    for cid in core:
+        assert get_category(cid) is not None, f"Core category {cid!r} missing"
 
 
-def test_media_hierarchy():
-    """Video → 4K → 4K+HDR hierarchy must exist."""
-    assert get_category("video")    is not None
-    assert get_category("video-4k") is not None
-    assert get_category("video-4k-hdr") is not None
-    assert get_category("video-4k").parent_id == "video"
-    assert get_category("video-4k-hdr").parent_id == "video-4k"
+def test_format_hierarchy():
+    """Video → MKV/MP4 format hierarchy must exist."""
+    assert get_category("video")     is not None
+    assert get_category("video-mkv") is not None
+    assert get_category("video-mp4") is not None
+    assert get_category("video-mkv").parent_id == "video"
+    assert get_category("video-mp4").parent_id == "video"
+    # Audio formats
+    assert get_category("audio-flac").parent_id == "audio"
+    assert get_category("audio-mp3").parent_id  == "audio"
+    # Document formats
+    assert get_category("docs-pdf").parent_id   == "documents"
