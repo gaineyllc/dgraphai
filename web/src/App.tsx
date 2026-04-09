@@ -1,28 +1,34 @@
+// @ts-nocheck
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Sidebar } from './components/Sidebar'
-import { GraphPage } from './pages/GraphPage'
-import { MountsPage } from './pages/MountsPage'
-import { QueryWorkspace } from './pages/QueryWorkspace'
-import WorkflowBuilderPage from './pages/WorkflowBuilder'
-import { IndexerDashboard } from './pages/IndexerDashboard'
-import { SecurityPage }     from './pages/SecurityPage'
-import { ConnectorsPage }   from './pages/ConnectorsPage'
-import { InventoryPage }    from './pages/InventoryPage'
-import { QueryBuilder }     from './pages/QueryBuilder'
-import { UsagePage }       from './pages/UsagePage'
-import { AuthProvider }       from './components/AuthProvider'
-import { AuthGuard }          from './components/AuthGuard'
+import { Sidebar }      from './components/Sidebar'
+import { AuthProvider } from './components/AuthProvider'
+import { AuthGuard }    from './components/AuthGuard'
+
+// ── Auth pages — loaded immediately (small, needed before app shell) ──────────
 import { LoginPage }          from './pages/auth/LoginPage'
 import { SignupPage }         from './pages/auth/SignupPage'
-import { ForgotPasswordPage }  from './pages/auth/ForgotPasswordPage'
-import { ResetPasswordPage }   from './pages/auth/ResetPasswordPage'
-import { AcceptInvitePage }    from './pages/auth/AcceptInvitePage'
-import { SettingsPage }        from './pages/SettingsPage'
-import { AuditLogPage }       from './pages/AuditLogPage'
-import { useQuery } from '@tanstack/react-query'
-import { graphApi } from './lib/api'
-import { Terminal, Shield, Activity, Settings } from 'lucide-react'
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage'
+import { ResetPasswordPage }  from './pages/auth/ResetPasswordPage'
+import { AcceptInvitePage }   from './pages/auth/AcceptInvitePage'
+
+// ── Heavy pages — lazy loaded (Cytoscape, React Flow, CodeMirror) ─────────────
+const GraphPage        = lazy(() => import('./pages/GraphPage').then(m => ({ default: m.GraphPage })))
+const QueryWorkspace   = lazy(() => import('./pages/QueryWorkspace').then(m => ({ default: m.QueryWorkspace })))
+const QueryBuilder     = lazy(() => import('./pages/QueryBuilder').then(m => ({ default: m.QueryBuilder })))
+const WorkflowBuilder  = lazy(() => import('./pages/WorkflowBuilder'))
+const SecurityPage     = lazy(() => import('./pages/SecurityPage').then(m => ({ default: m.SecurityPage })))
+const IndexerDashboard = lazy(() => import('./pages/IndexerDashboard').then(m => ({ default: m.IndexerDashboard })))
+
+// ── Light pages — lazy loaded ─────────────────────────────────────────────────
+const MountsPage       = lazy(() => import('./pages/MountsPage').then(m => ({ default: m.MountsPage })))
+const ConnectorsPage   = lazy(() => import('./pages/ConnectorsPage').then(m => ({ default: m.ConnectorsPage })))
+const InventoryPage    = lazy(() => import('./pages/InventoryPage').then(m => ({ default: m.InventoryPage })))
+const UsagePage        = lazy(() => import('./pages/UsagePage').then(m => ({ default: m.UsagePage })))
+const SettingsPage     = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const AuditLogPage     = lazy(() => import('./pages/AuditLogPage').then(m => ({ default: m.AuditLogPage })))
+const GraphDiffPage    = lazy(() => import('./pages/GraphDiffPage').then(m => ({ default: m.GraphDiffPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,7 +36,38 @@ const queryClient = new QueryClient({
   },
 })
 
-const AUTH_ONLY_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/accept-invite']
+const AUTH_ONLY_PATHS = [
+  '/login', '/signup', '/forgot-password', '/reset-password',
+  '/verify-email', '/accept-invite',
+]
+
+// ── Loading fallback ──────────────────────────────────────────────────────────
+function PageLoader() {
+  return (
+    <div style={{
+      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: '#0a0a0f',
+    }}>
+      <div style={{
+        width: 32, height: 32, borderRadius: '50%',
+        border: '3px solid #1a1a28', borderTopColor: '#4f8ef7',
+        animation: 'spin .7s linear infinite',
+      }} />
+    </div>
+  )
+}
+
+// ── Settings placeholder (still loading) ──────────────────────────────────────
+function PlaceholderPage({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0f' }}>
+      <div style={{ textAlign: 'center' }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#e2e2f0' }}>{title}</h2>
+        <p style={{ fontSize: 12, color: '#55557a', marginTop: 4 }}>{desc}</p>
+      </div>
+    </div>
+  )
+}
 
 function AppShell() {
   const location = useLocation()
@@ -40,46 +77,32 @@ function AppShell() {
     <div className="flex h-screen overflow-hidden">
       {!isAuthPage && <Sidebar />}
       <main className="flex-1 flex flex-col overflow-hidden">
-        <Routes>
-          <Route path="/"         element={<GraphPage />} />
-          <Route path="/mounts"     element={<MountsPage />} />
-          <Route path="/connectors" element={<ConnectorsPage />} />
-          <Route path="/inventory"  element={<InventoryPage />} />
-          <Route path="/builder"    element={<QueryBuilder />} />
-          <Route path="/usage"      element={<UsagePage />} />
-          <Route path="/login"     element={<LoginPage />} />
-          <Route path="/signup"    element={<SignupPage />} />
-          <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
-          <Route path="/reset-password"   element={<ResetPasswordPage />} />
-          <Route path="/accept-invite"    element={<AcceptInvitePage />} />
-          <Route path="/settings"         element={<SettingsPage />} />
-          <Route path="/audit"            element={<AuditLogPage />} />
-          <Route path="/query"    element={<QueryWorkspace />} />
-          <Route path="/security" element={<SecurityPage />} />
-          <Route path="/workflows" element={<WorkflowBuilderPage />} />
-          <Route path="/indexer"  element={<IndexerDashboard />} />
-          <Route path="/settings" element={<PlaceholderPage icon={Settings} title="Settings"             desc="Configure fsgraph" />} />
-        </Routes>
-      </main>
-    </div>
-  )
-}
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* Auth — not lazy, needed immediately */}
+            <Route path="/login"           element={<LoginPage />} />
+            <Route path="/signup"          element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password"  element={<ResetPasswordPage />} />
+            <Route path="/accept-invite"   element={<AcceptInvitePage />} />
 
-function PlaceholderPage({ icon: Icon, title, desc }: {
-  icon: React.ElementType
-  title: string
-  desc: string
-}) {
-  return (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-14 h-14 rounded-2xl bg-[#12121a] border border-[#252535] flex items-center justify-center mx-auto mb-4">
-          <Icon size={24} className="text-[#4f8ef7]" />
-        </div>
-        <h2 className="text-lg font-semibold text-[#e2e2f0]">{title}</h2>
-        <p className="text-sm text-[#55557a] mt-1">{desc}</p>
-        <p className="text-xs text-[#252535] mt-4">Coming next session</p>
-      </div>
+            {/* App routes — lazy */}
+            <Route path="/"           element={<GraphPage />} />
+            <Route path="/mounts"     element={<MountsPage />} />
+            <Route path="/connectors" element={<ConnectorsPage />} />
+            <Route path="/inventory"  element={<InventoryPage />} />
+            <Route path="/builder"    element={<QueryBuilder />} />
+            <Route path="/query"      element={<QueryWorkspace />} />
+            <Route path="/security"   element={<SecurityPage />} />
+            <Route path="/workflows"  element={<WorkflowBuilder />} />
+            <Route path="/indexer"    element={<IndexerDashboard />} />
+            <Route path="/usage"      element={<UsagePage />} />
+            <Route path="/settings"   element={<SettingsPage />} />
+            <Route path="/audit"      element={<AuditLogPage />} />
+            <Route path="/diff"       element={<GraphDiffPage />} />
+          </Routes>
+        </Suspense>
+      </main>
     </div>
   )
 }

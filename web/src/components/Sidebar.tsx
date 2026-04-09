@@ -7,7 +7,7 @@ import {
   Network, HardDrive, Terminal,
   Shield, Activity, Settings, Layers, PlugZap,
   LayoutGrid, Wrench, BarChart2, ClipboardList,
-  LogOut, Search
+  LogOut, Search, GitCompare
 } from 'lucide-react'
 import { GlobalSearch } from './GlobalSearch'
 import { useAuth } from './AuthProvider'
@@ -23,6 +23,7 @@ const NAV = [
   { to: '/indexer',    icon: Activity,      label: 'Indexer'    },
   { to: '/usage',      icon: BarChart2,     label: 'Usage'      },
   { to: '/audit',      icon: ClipboardList, label: 'Audit Log'  },
+  { to: '/diff',       icon: GitCompare,    label: 'What Changed'},
 ]
 
 export function Sidebar() {

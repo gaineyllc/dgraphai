@@ -148,6 +148,13 @@ async def signup(req: SignupRequest, db: AsyncSession = Depends(get_db)) -> dict
     except Exception:
         pass  # Don't fail signup if email fails
 
+    # Queue onboarding email sequence
+    try:
+        from src.dgraphai.tasks.onboarding import queue_onboarding_sequence
+        queue_onboarding_sequence(str(user.id), str(tenant.id), req.email, req.name)
+    except Exception:
+        pass  # Non-critical
+
     return {
         "user_id":    str(user.id),
         "tenant_id":  str(tenant.id),

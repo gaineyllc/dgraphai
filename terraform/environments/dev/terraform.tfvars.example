@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars and fill in real values
+# terraform.tfvars is gitignored — never commit secrets
+
+# Stripe test mode key (sk_test_...)
+stripe_secret_key = "sk_test_REPLACE_ME"
+
+# Okta developer account (free at developer.okta.com)
+okta_org_name  = "dev-REPLACE_ME"
+okta_api_token = "REPLACE_ME"
+
+# Neo4j password for test instance
+neo4j_password = "TestNeo4j2026!"
+
+# Your dev app URL (use ngrok for local testing)
+app_url = "https://REPLACE_ME.ngrok.io"
