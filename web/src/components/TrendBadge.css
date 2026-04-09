@@ -7,40 +7,50 @@
 .trend-badge-sm { font-size: 11px; }
 .trend-badge-md { font-size: 12px; }
 
-.trend-positive { background: rgba(22,163,74,.12);  color: #16a34a; }
-.trend-negative { background: rgba(220,38,38,.10);  color: #dc2626; }
-.trend-flat     { background: rgba(107,114,128,.1); color: #6b7280; }
+.trend-positive { background: var(--color-success-dim,  rgba(52,211,153,.12)); color: var(--color-success, #34d399); }
+.trend-negative { background: var(--color-critical-dim, rgba(240,69,69,.10));  color: var(--color-critical, #f04545); }
+.trend-flat     { background: rgba(255,255,255,.05); color: var(--text-tertiary); }
 
 /* MetricCard — large number with trend */
 .metric-card {
-  background: #0e0e16; border: 1px solid #1a1a28;
-  border-left: 2px solid var(--mc, #4f8ef7);
-  border-radius: 10px; padding: 14px 16px;
+  background: var(--surface-1, #0f0f1a);
+  border: 1px solid var(--border-default, rgba(255,255,255,.10));
+  border-left: 2px solid var(--mc, var(--color-primary, #7c5cfc));
+  border-radius: var(--radius-md, 10px); padding: 14px 16px;
   display: flex; flex-direction: column; gap: 8px;
-  transition: border-color .15s;
+  transition: border-color var(--duration-short, 150ms),
+              background   var(--duration-short, 150ms),
+              box-shadow   var(--duration-short, 150ms);
 }
 .metric-card-clickable { cursor: pointer; }
-.metric-card-clickable:hover { border-color: var(--mc, #4f8ef7); background: #12121f; }
+.metric-card-clickable:hover {
+  border-color: var(--mc, var(--color-primary));
+  background: var(--surface-2, #141424);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mc, #7c5cfc) 20%, transparent);
+}
 
 .metric-card-header {
   display: flex; align-items: center; gap: 8px;
 }
 .metric-card-icon {
-  width: 28px; height: 28px; border-radius: 8px;
-  background: color-mix(in srgb, var(--mc, #4f8ef7) 12%, transparent);
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm, 6px);
+  background: color-mix(in srgb, var(--mc, var(--color-primary, #7c5cfc)) 12%, transparent);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .metric-card-title {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .07em; color: #55557a;
+  font-size: var(--text-label-sm, 11px); font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em;
+  color: var(--text-tertiary, #55557a);
 }
 .metric-card-body {
   display: flex; align-items: baseline; gap: 10px;
 }
 .metric-card-value {
-  font-size: 32px; font-weight: 800; line-height: 1;
+  font-size: var(--text-display-lg, 36px); font-weight: 800; line-height: 1;
   font-variant-numeric: tabular-nums; letter-spacing: -.02em;
 }
 .metric-card-sub {
-  font-size: 11px; color: #35354a; margin-top: -2px;
+  font-size: var(--text-label-sm, 11px);
+  color: var(--text-tertiary, #55557a); margin-top: -2px;
 }

@@ -7,27 +7,35 @@
   display: inline-flex; align-items: center; justify-content: center;
   font-weight: 800; color: #fff; text-align: center;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
 }
 
 .severity-badge-label {
-  font-size: 12px; font-weight: 600;
+  font-size: var(--text-label-md, 13px); font-weight: 600;
 }
 
 .severity-badge-count {
-  font-size: 13px; font-weight: 700; color: #d0d0e8;
+  font-size: var(--text-label-md, 13px); font-weight: 700;
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
 /* Pill variant */
 .severity-pill {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 8px 3px 5px; border-radius: 20px;
+  padding: 3px 8px 3px 5px;
+  border-radius: var(--radius-full, 9999px);
   background: color-mix(in srgb, var(--sc, #6b7280) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--sc, #6b7280) 25%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sc, #6b7280) 22%, transparent);
+  transition: background var(--duration-short, 150ms);
+}
+.severity-pill:hover {
+  background: color-mix(in srgb, var(--sc, #6b7280) 18%, transparent);
 }
 
 .severity-pill-count {
-  font-size: 12px; font-weight: 700; color: #d0d0e8;
+  font-size: 12px; font-weight: 700;
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 

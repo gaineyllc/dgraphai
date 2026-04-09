@@ -1,5 +1,6 @@
 /**
- * Sidebar — navigation with user account section.
+ * Sidebar — Material 3 Expressive icon rail navigation.
+ * Electric indigo active state, tonal surfaces, M3 state layers.
  */
 // @ts-nocheck
 import { NavLink, useNavigate } from 'react-router-dom'
@@ -12,19 +13,23 @@ import {
 import { GlobalSearch } from './GlobalSearch'
 import { NotificationCenter } from './NotificationCenter'
 import { useAuth } from './AuthProvider'
+import './Sidebar.css'
 
-const NAV = [
+const NAV_PRIMARY = [
   { to: '/',           icon: Network,       label: 'Graph'        },
-  { to: '/mounts',     icon: HardDrive,     label: 'Sources'      },
-  { to: '/connectors', icon: PlugZap,       label: 'Connectors'   },
   { to: '/inventory',  icon: LayoutGrid,    label: 'Inventory'    },
+  { to: '/security',   icon: Shield,        label: 'Security'     },
   { to: '/diff',       icon: GitCompare,    label: 'What Changed' },
+  { to: '/connectors', icon: PlugZap,       label: 'Connectors'   },
+]
+
+const NAV_SECONDARY = [
   { to: '/query',      icon: Terminal,      label: 'Query'        },
   { to: '/builder',    icon: Wrench,        label: 'Builder'      },
-  { to: '/security',   icon: Shield,        label: 'Security'     },
   { to: '/indexer',    icon: Activity,      label: 'Indexer'      },
   { to: '/usage',      icon: BarChart2,     label: 'Usage'        },
   { to: '/audit',      icon: ClipboardList, label: 'Audit Log'    },
+  { to: '/mounts',     icon: HardDrive,     label: 'Sources'      },
 ]
 
 export function Sidebar() {
@@ -32,64 +37,65 @@ export function Sidebar() {
   const navigate = useNavigate()
 
   const initials = user
-    ? (user.name || user.email).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    ? (user.name || user.email).split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
     : '??'
 
   return (
-    <aside className="w-14 flex flex-col items-center bg-[#12121a] border-r border-[#252535] py-3 gap-1 flex-shrink-0">
-
-      {/* Logo — click to go home */}
+    <aside className="sidebar">
+      {/* Logo */}
       <button
         onClick={() => navigate('/')}
-        className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4f8ef7] to-[#8b5cf6] flex items-center justify-center mb-2 hover:opacity-90 transition-opacity"
+        className="sidebar-logo"
         title="dgraph.ai"
+        aria-label="dgraph.ai home"
       >
-        <Layers size={16} className="text-white" />
+        <Layers size={17} />
       </button>
 
       {/* Global search */}
-      <div className="w-10 mb-1"><GlobalSearch /></div>
+      <div className="sidebar-search">
+        <GlobalSearch />
+      </div>
 
-      {/* Nav items */}
-      {NAV.map(({ to, icon: Icon, label }) => (
-        <NavLink
-          key={to}
-          to={to}
-          title={label}
-          className={({ isActive }) =>
-            `w-10 h-10 rounded-lg flex items-center justify-center transition-colors group relative ` +
-            (isActive
-              ? 'bg-[#4f8ef7]/20 text-[#4f8ef7]'
-              : 'text-[#55557a] hover:text-[#e2e2f0] hover:bg-[#1a1a28]')
-          }
-        >
-          <Icon size={18} />
-          <span className="absolute left-full ml-2 px-2 py-1 bg-[#1a1a28] border border-[#252535] text-[#e2e2f0] text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity">
-            {label}
-          </span>
-        </NavLink>
-      ))}
+      {/* Primary nav */}
+      <nav className="sidebar-nav" role="navigation" aria-label="Primary">
+        {NAV_PRIMARY.map(({ to, icon: Icon, label }) => (
+          <SidebarItem key={to} to={to} icon={Icon} label={label} />
+        ))}
+      </nav>
 
-      <div className="flex-1" />
+      <div className="sidebar-divider" role="separator" />
+
+      {/* Secondary nav */}
+      <nav className="sidebar-nav" role="navigation" aria-label="Secondary">
+        {NAV_SECONDARY.map(({ to, icon: Icon, label }) => (
+          <SidebarItem key={to} to={to} icon={Icon} label={label} />
+        ))}
+      </nav>
+
+      <div className="sidebar-spacer" />
 
       {/* Notifications */}
-      <NotificationCenter />
+      <div className="sidebar-action">
+        <NotificationCenter />
+      </div>
 
       {/* Settings */}
-      <NavLink to="/settings" title="Settings"
-        className={({ isActive }) =>
-          `w-10 h-10 rounded-lg flex items-center justify-center transition-colors ` +
-          (isActive ? 'bg-[#4f8ef7]/20 text-[#4f8ef7]' : 'text-[#55557a] hover:text-[#e2e2f0] hover:bg-[#1a1a28]')
-        }>
-        <Settings size={18} />
+      <NavLink to="/settings" title="Settings" className="sidebar-action-link">
+        {({ isActive }) => (
+          <div className={`sidebar-item ${isActive ? 'active' : ''}`}>
+            <Settings size={18} />
+            <span className="sidebar-tooltip">Settings</span>
+          </div>
+        )}
       </NavLink>
 
-      {/* User avatar → settings on click */}
+      {/* User avatar */}
       <button
         onClick={() => navigate('/settings')}
-        title={user ? `${user.name || user.email}\n${user.plan} plan` : 'Account'}
-        className="w-8 h-8 rounded-full bg-[#4f8ef7] text-white text-xs font-bold flex items-center justify-content mt-1 hover:opacity-90 transition-opacity"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        title={user ? `${user.name || user.email}\n${user.plan ?? 'free'} plan` : 'Account'}
+        className="sidebar-avatar"
+        aria-label="Account settings"
       >
         {initials}
       </button>
@@ -98,10 +104,25 @@ export function Sidebar() {
       <button
         onClick={logout}
         title="Sign out"
-        className="w-10 h-8 rounded-lg flex items-center justify-center text-[#35354a] hover:text-[#f87171] hover:bg-[#1a1a28] transition-colors mb-1"
+        className="sidebar-item sidebar-logout"
+        aria-label="Sign out"
       >
         <LogOut size={15} />
       </button>
     </aside>
+  )
+}
+
+function SidebarItem({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
+  return (
+    <NavLink
+      to={to}
+      title={label}
+      className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}
+      aria-label={label}
+    >
+      <Icon size={18} />
+      <span className="sidebar-tooltip">{label}</span>
+    </NavLink>
   )
 }
