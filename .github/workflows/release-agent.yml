@@ -1,0 +1,156 @@
+name: Release dgraph-agent
+
+on:
+  push:
+    tags:
+      - 'agent/v*'   # trigger on: git tag agent/v0.1.0 && git push --tags
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    name: Build and release dgraph-agent
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: agent-go/go.sum
+
+      - name: Run tests
+        working-directory: agent-go
+        run: go test ./...
+
+      - name: Build binaries
+        working-directory: agent-go
+        env:
+          VERSION: ${{ github.ref_name }}
+          COMMIT:  ${{ github.sha }}
+          DATE:    ${{ github.event.head_commit.timestamp }}
+        run: |
+          LDFLAGS="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}"
+
+          # Linux amd64
+          GOOS=linux   GOARCH=amd64  CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/dgraph-agent-linux-amd64   ./cmd/dgraph-agent
+          # Linux arm64
+          GOOS=linux   GOARCH=arm64  CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/dgraph-agent-linux-arm64   ./cmd/dgraph-agent
+          # macOS amd64
+          GOOS=darwin  GOARCH=amd64  CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/dgraph-agent-darwin-amd64  ./cmd/dgraph-agent
+          # macOS arm64 (Apple Silicon)
+          GOOS=darwin  GOARCH=arm64  CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/dgraph-agent-darwin-arm64  ./cmd/dgraph-agent
+          # Windows amd64
+          GOOS=windows GOARCH=amd64  CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o dist/dgraph-agent-windows-amd64.exe ./cmd/dgraph-agent
+
+          # Checksums
+          cd dist && sha256sum * > checksums.txt
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        working-directory: agent-go
+        run: |
+          TAG=${GITHUB_REF_NAME#agent/}  # strip "agent/" prefix → "v0.1.0"
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag ghcr.io/gaineyllc/dgraph-agent:${TAG} \
+            --tag ghcr.io/gaineyllc/dgraph-agent:latest \
+            --push \
+            -f Dockerfile \
+            .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: dgraph-agent ${{ github.ref_name }}
+          body: |
+            ## dgraph-agent ${{ github.ref_name }}
+
+            Lightweight filesystem scanner agent for dgraph.ai.
+
+            ### Install (Linux)
+            ```bash
+            curl -L https://github.com/gaineyllc/dgraphai/releases/download/${{ github.ref_name }}/dgraph-agent-linux-amd64 \
+              -o dgraph-agent && chmod +x dgraph-agent
+            ```
+
+            ### Install (Docker)
+            ```bash
+            docker run -d ghcr.io/gaineyllc/dgraph-agent:latest \
+              -e DGRAPH_AGENT_API_KEY=<your-key> \
+              -e DGRAPH_CLOUD_URL=https://api.dgraph.ai
+            ```
+
+            ### Verify
+            ```bash
+            sha256sum -c checksums.txt
+            ```
+          files: |
+            agent-go/dist/dgraph-agent-linux-amd64
+            agent-go/dist/dgraph-agent-linux-arm64
+            agent-go/dist/dgraph-agent-darwin-amd64
+            agent-go/dist/dgraph-agent-darwin-arm64
+            agent-go/dist/dgraph-agent-windows-amd64.exe
+            agent-go/dist/checksums.txt
+
+  # ── Install script served from the platform ──────────────────────────────
+  # Creates deploy/install.sh which is served at APP_URL/install.sh
+  install-script:
+    name: Update install script
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write install.sh
+        run: |
+          TAG=${GITHUB_REF_NAME#agent/}
+          cat > deploy/install.sh << 'SCRIPT'
+          #!/bin/bash
+          # dgraph-agent one-liner install
+          # Usage: curl -L https://app.dgraph.ai/install.sh | DGRAPH_AGENT_API_KEY=xxx bash
+          set -euo pipefail
+
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          ARCH=$(uname -m)
+          case $ARCH in
+            x86_64)  ARCH="amd64" ;;
+            aarch64) ARCH="arm64" ;;
+            arm64)   ARCH="arm64" ;;
+            *) echo "Unsupported arch: $ARCH"; exit 1 ;;
+          esac
+
+          VERSION="RELEASE_TAG"
+          BASE_URL="https://github.com/gaineyllc/dgraphai/releases/download/agent/${VERSION}"
+          BINARY="dgraph-agent-${OS}-${ARCH}"
+
+          echo "Downloading dgraph-agent ${VERSION} for ${OS}/${ARCH}..."
+          curl -fsSL "${BASE_URL}/${BINARY}" -o /usr/local/bin/dgraph-agent
+          chmod +x /usr/local/bin/dgraph-agent
+
+          echo "Installed: $(dgraph-agent --version)"
+          echo ""
+          echo "Starting agent..."
+          exec dgraph-agent \
+            --api-key="${DGRAPH_AGENT_API_KEY:-}" \
+            --cloud-url="${DGRAPH_CLOUD_URL:-https://api.dgraph.ai}"
+          SCRIPT
+          sed -i "s/RELEASE_TAG/${TAG}/" deploy/install.sh
+          chmod +x deploy/install.sh
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update install.sh for ${{ github.ref_name }}"
+          file_pattern: deploy/install.sh

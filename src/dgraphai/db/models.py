@@ -197,18 +197,28 @@ class ScannerAgent(Base):
     """
     __tablename__ = "scanner_agents"
 
-    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id       = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    name            = Column(String(256), nullable=False)
-    description     = Column(Text)
-    api_key_hash    = Column(String(256), nullable=False)  # bcrypt hash of API key
-    version         = Column(String(32))
-    platform        = Column(String(32))                   # kubernetes | docker | bare-metal
-    is_active       = Column(Boolean, default=True)
-    last_seen       = Column(DateTime(timezone=True))
-    last_health     = Column(JSON, default=dict)           # latest health report
-    registered_at   = Column(DateTime(timezone=True), default=now_utc)
-    registered_by   = Column(UUID(as_uuid=True))           # user_id
+    id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id           = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    name                = Column(String(256), nullable=False)
+    description         = Column(Text)
+    api_key_hash        = Column(String(256), nullable=False)
+    version             = Column(String(32))
+    platform            = Column(String(32))               # kubernetes | docker | bare-metal
+    os                  = Column(String(64))               # linux | darwin | windows
+    hostname            = Column(String(256))
+    is_active           = Column(Boolean, default=True)
+    last_seen           = Column(DateTime(timezone=True))  # legacy
+    last_seen_at        = Column(DateTime(timezone=True))  # used by heartbeat
+    last_health         = Column(JSON, default=dict)
+    files_indexed       = Column(Integer, default=0)
+    files_pending       = Column(Integer, default=0)
+    last_error          = Column(Text)
+    connector_statuses  = Column(JSON, default=dict)       # connector_id → status
+    created_at          = Column(DateTime(timezone=True), default=now_utc)
+    created_by          = Column(UUID(as_uuid=True))       # user_id who generated the token
+    # Legacy aliases
+    registered_at       = Column(DateTime(timezone=True), default=now_utc)
+    registered_by       = Column(UUID(as_uuid=True))
 
     tenant          = relationship("Tenant", back_populates="scanners")
 
