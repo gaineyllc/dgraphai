@@ -47,6 +47,17 @@ class Tenant(Base):
     max_connectors  = Column(String, default="5")
     max_nodes       = Column(String, default="1000000")
 
+    # Stripe billing
+    stripe_customer_id   = Column(String(64))
+    subscription_status  = Column(String(32), default="none")
+    current_period_end   = Column(Integer)   # Unix timestamp
+    cancel_at_period_end = Column(Boolean, default=False)
+
+    # Settings
+    timezone             = Column(String(64), default="UTC")
+    logo_url             = Column(String(512))
+    notification_config  = Column(JSON, default=dict)
+
     users           = relationship("User",         back_populates="tenant", cascade="all, delete")
     oidc_configs    = relationship("OIDCConfig",   back_populates="tenant", cascade="all, delete")
     roles           = relationship("Role",         back_populates="tenant", cascade="all, delete")
@@ -325,6 +336,69 @@ class UserInvite(Base):
     expires_at  = Column(DateTime(timezone=True), nullable=False)
     used_at     = Column(DateTime(timezone=True))
     created_at  = Column(DateTime(timezone=True), default=now_utc)
+
+
+class SCIMConfig(Base):
+    """SCIM provisioning token per tenant."""
+    __tablename__ = "scim_configs"
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id    = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    token_hash   = Column(String(256), nullable=False)
+    is_active    = Column(Boolean, default=True)
+    last_used_at = Column(DateTime(timezone=True))
+    created_by   = Column(UUID(as_uuid=True))
+    created_at   = Column(DateTime(timezone=True), default=now_utc)
+
+
+class SAMLConfig(Base):
+    """SAML 2.0 IdP configuration per tenant."""
+    __tablename__ = "saml_configs"
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id        = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    idp_entity_id    = Column(String(512), nullable=False)
+    idp_sso_url      = Column(String(512), nullable=False)
+    idp_certificate  = Column(Text, nullable=False)
+    email_attribute  = Column(String(128), default="emailaddress")
+    name_attribute   = Column(String(128), default="displayname")
+    groups_attribute = Column(String(128), default="groups")
+    role_mappings    = Column(JSON, default=dict)
+    is_active        = Column(Boolean, default=True)
+    created_by       = Column(UUID(as_uuid=True))
+    created_at       = Column(DateTime(timezone=True), default=now_utc)
+
+
+class WebhookEndpoint(Base):
+    """Registered outbound webhook endpoints."""
+    __tablename__ = "webhook_endpoints"
+    id                   = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id            = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    url                  = Column(String(512), nullable=False)
+    secret               = Column(String(256))  # HMAC signing secret
+    event_types          = Column(JSON, default=list)
+    description          = Column(String(256))
+    is_active            = Column(Boolean, default=True)
+    last_delivery_at     = Column(DateTime(timezone=True))
+    last_delivery_status = Column(String(16))
+    failure_count        = Column(Integer, default=0)
+    created_by           = Column(UUID(as_uuid=True))
+    created_at           = Column(DateTime(timezone=True), default=now_utc)
+
+
+class WebhookDelivery(Base):
+    """Log of webhook delivery attempts."""
+    __tablename__ = "webhook_deliveries"
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    endpoint_id  = Column(UUID(as_uuid=True), ForeignKey("webhook_endpoints.id", ondelete="CASCADE"), nullable=False)
+    tenant_id    = Column(UUID(as_uuid=True), nullable=False)
+    event_type   = Column(String(128), nullable=False)
+    event_id     = Column(String(64), nullable=False)
+    attempts     = Column(Integer, default=1)
+    delivered    = Column(Boolean, default=False)
+    status       = Column(String(32), default="pending")
+    last_error   = Column(Text)
+    delivered_at = Column(DateTime(timezone=True))
+    created_at   = Column(DateTime(timezone=True), default=now_utc)
+    __table_args__ = (Index("ix_webhook_deliveries_tenant", "tenant_id", "created_at"),)
 
 
 class GDPRErasureJob(Base):

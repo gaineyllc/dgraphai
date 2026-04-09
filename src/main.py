@@ -28,6 +28,11 @@ from src.dgraphai.api.connectors_full import router as connectors_router
 from src.dgraphai.auth.local         import router as local_auth_router
 from src.dgraphai.api.users          import router as users_router
 from src.dgraphai.auth.audit         import audit_router
+from src.dgraphai.auth.scim          import router as scim_router, mgmt_router as scim_mgmt_router
+from src.dgraphai.auth.saml          import router as saml_router, mgmt_router as saml_mgmt_router
+from src.dgraphai.api.settings       import router as settings_router
+from src.dgraphai.webhooks.outbound  import webhook_router
+from src.dgraphai.observability.metrics import setup_metrics
 from src.dgraphai.api.inventory       import router as inventory_router
 from src.dgraphai.api.inventory_search import router as inv_search_router
 from src.dgraphai.api.schema          import router as schema_router
@@ -46,6 +51,9 @@ async def lifespan(app: FastAPI):
     log.info("Database tables ready")
     yield
 
+
+# Observability setup (before routes)
+from src.dgraphai.observability.metrics import setup_metrics as _setup_metrics
 
 app = FastAPI(
     title="dgraphai",
@@ -98,6 +106,12 @@ app.include_router(auth_router)
 app.include_router(local_auth_router)
 app.include_router(users_router)
 app.include_router(audit_router)
+app.include_router(scim_router)
+app.include_router(scim_mgmt_router)
+app.include_router(saml_router)
+app.include_router(saml_mgmt_router)
+app.include_router(settings_router)
+app.include_router(webhook_router)
 
 # Protected API routes
 app.include_router(graph_router)
@@ -136,6 +150,10 @@ async def _gql_context(request: __import__('fastapi').Request):
 
 graphql_app = make_graphql_router(_gql_context)
 app.include_router(graphql_app, prefix="/graphql")
+
+
+# Attach Prometheus + OTLP after all routes registered
+_setup_metrics(app)
 
 
 @app.get("/api/health")
