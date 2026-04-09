@@ -325,9 +325,14 @@ class AzureBlobConnector(BaseConnector):
 
 # ── Connector registry ────────────────────────────────────────────────────────
 
+from src.dgraphai.connectors.sharepoint import SharePointConnector
+from src.dgraphai.connectors.gcs import GCSConnector
+
 _REGISTRY: dict[str, type[BaseConnector]] = {
-    "aws-s3":    S3Connector,
-    "azure-blob": AzureBlobConnector,
+    "aws-s3":       S3Connector,
+    "azure-blob":   AzureBlobConnector,
+    "sharepoint":   SharePointConnector,
+    "gcs":          GCSConnector,
 }
 
 
