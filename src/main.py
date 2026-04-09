@@ -21,6 +21,7 @@ from src.dgraphai.api.scanner   import router as scanner_router
 from src.dgraphai.api.queries   import router as queries_router
 from src.dgraphai.api.workflows import router as workflows_router
 from src.dgraphai.api.license   import router as license_router
+from src.dgraphai.api.proxy_sync import router as proxy_sync_router
 from src.dgraphai.api.stream      import router as stream_router, hf_router
 from src.dgraphai.api.alerts      import router as alerts_router
 from src.dgraphai.api.compliance  import router as compliance_router
@@ -193,6 +194,7 @@ async def _gql_context(request: __import__('fastapi').Request):
         return {"tenant_id": auth.tenant_id, "graph_backend": backend, "user": auth}
 
 graphql_app = make_graphql_router(_gql_context)
+app.include_router(proxy_sync_router)
 app.include_router(graphql_app, prefix="/graphql")
 
 
@@ -227,3 +229,4 @@ if __name__ == "__main__":
         reload=bool(__import__("os").getenv("dgraphai_ENABLE_DOCS")),
         log_level="info",
     )
+

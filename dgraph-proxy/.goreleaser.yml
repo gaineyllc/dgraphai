@@ -1,0 +1,59 @@
+project_name: dgraph-proxy
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: dgraph-proxy
+    main: ./cmd/dgraph-proxy
+    binary: dgraph-proxy
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    files:
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+dockers:
+  - image_templates:
+      - "ghcr.io/gaineyllc/dgraph-proxy:{{ .Version }}-amd64"
+      - "ghcr.io/gaineyllc/dgraph-proxy:latest"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+
+release:
+  github:
+    owner: gaineyllc
+    name: dgraphai
+  name_template: "dgraph-proxy v{{.Version}}"
