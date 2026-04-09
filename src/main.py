@@ -100,12 +100,14 @@ app = FastAPI(
 from src.dgraphai.middleware.rate_limit import rate_limit_middleware
 app.middleware("http")(rate_limit_middleware)
 
+# Build CORS origins: APP_URL is always allowed; add comma-separated extras
+_app_url_origin = __import__("os").getenv("APP_URL", "").rstrip("/")
+_extra_origins   = __import__("os").getenv("DGRAPHAI_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:7474")
+_all_origins     = list(filter(None, [_app_url_origin] + _extra_origins.split(",")))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=__import__("os").getenv(
-        "dgraphai_ALLOWED_ORIGINS",
-        "http://localhost:5173,http://localhost:7474"
-    ).split(","),
+    allow_origins=_all_origins or ["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -4,10 +4,19 @@
  */
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+// Safe wrapper — returns noop if called outside Router context
+function useSafeNavigate() {
+  try {
+    return useNavigate()
+  } catch {
+    return () => {}
+  }
+}
 import { parseJWT, getToken, clearToken } from '../lib/auth'
 
 export function useSessionExpiry() {
-  const navigate = useNavigate()
+  const navigate = useSafeNavigate()
 
   useEffect(() => {
     const check = () => {

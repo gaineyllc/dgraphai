@@ -111,6 +111,11 @@ class User(Base):
     name            = Column(String(256))                    # alias for display_name
     created_at      = Column(DateTime(timezone=True), default=now_utc)
 
+    @property
+    def display(self) -> str:
+        """Always returns a non-empty display name."""
+        return self.display_name or self.name or self.email or ""
+
     tenant          = relationship("Tenant", back_populates="users")
     role_assignments = relationship("RoleAssignment", back_populates="user", cascade="all, delete")
 

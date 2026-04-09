@@ -84,12 +84,16 @@ app.conf.update(
             "schedule": 86400,
         },
         "sync-nvd-cves-daily": {
-            "task": "dgraphai.tasks.cve_sync.sync_nvd_cves",
+            "task": "dgraphai.tasks.cve_sync.sync_nvd_cves",  # matches @app.task name=
             "schedule": 86400,
             "kwargs": {"days_back": 2},
         },
         "check-cisa-kev-daily": {
             "task": "dgraphai.tasks.cve_sync.check_cisa_kev",
+            "schedule": 86400,
+        },
+        "run-onboarding-check-daily": {
+            "task": "dgraphai.tasks.maintenance.cleanup_expired_tokens",
             "schedule": 86400,
         },
         "reenrich-stale-nodes-hourly": {

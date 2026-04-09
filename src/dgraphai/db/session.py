@@ -11,6 +11,12 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from src.dgraphai.db.models import Base
+# Import all model modules that define tables so create_all() sees them
+import src.dgraphai.db.models           # noqa: F401 — registers all core models
+try:
+    import src.dgraphai.db.connector_models  # noqa: F401 — registers Connector table
+except Exception:
+    pass
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",

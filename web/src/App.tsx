@@ -119,6 +119,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        {/* AuthProvider MUST be inside BrowserRouter — useSessionExpiry needs useNavigate */}
         <AuthProvider>
           <AuthGuard>
             <AppShell />

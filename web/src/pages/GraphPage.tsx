@@ -8,6 +8,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { NodeTooltip } from '../components/NodeTooltip'
 import { InspectionPane } from '../components/InspectionPane'
+import { NodeContextMenu } from '../components/NodeContextMenu'
 import '../components/inspection.css'
 import { useQuery } from '@tanstack/react-query'
 import { Search, X, ChevronRight } from 'lucide-react'
@@ -20,6 +21,9 @@ export function GraphPage() {
   const [tooltipNode, setTooltipNode]   = useState<GraphNode | null>(null)
   const [tooltipPos, setTooltipPos]     = useState({ x: 0, y: 0 })
   const [inspecting, setInspecting]     = useState<GraphNode | null>(null)
+  const [contextNode, setContextNode]   = useState<GraphNode | null>(null)
+  const [contextPos, setContextPos]     = useState({ x: 0, y: 0 })
+  const [attackPathFrom, setAttackPathFrom] = useState<string | null>(null)
   const [searchTerm, setSearchTerm]     = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [searching, setSearching]       = useState(false)
@@ -140,7 +144,7 @@ export function GraphPage() {
             selectedId={selectedNode?.id}
             onNodeClick={(node) => {
               setSelectedNode(node)
-              // Show tooltip at last mouse position
+              setContextNode(null)  // close context menu on left click
               setTooltipNode(node)
             }}
             onNodeExpand={loadNode}
@@ -148,6 +152,11 @@ export function GraphPage() {
               setSelectedNode(node)
               setTooltipNode(node)
               setTooltipPos(pos)
+            }}
+            onNodeRightClick={(node, pos) => {
+              setContextNode(node)
+              setContextPos(pos)
+              setTooltipNode(null)
             }}
             className="w-full h-full"
           />
@@ -193,6 +202,25 @@ export function GraphPage() {
             node={inspecting}
             onClose={() => setInspecting(null)}
             onExpand={loadNode}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Right-click context menu */}
+      <AnimatePresence>
+        {contextNode && (
+          <NodeContextMenu
+            node={contextNode}
+            position={contextPos}
+            onClose={() => setContextNode(null)}
+            onExpand={(nodeId, hops) => {
+              loadNode(nodeId)
+              setContextNode(null)
+            }}
+            onAttackPath={(fromId) => {
+              setAttackPathFrom(fromId)
+              setContextNode(null)
+            }}
           />
         )}
       </AnimatePresence>

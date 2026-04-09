@@ -14,7 +14,7 @@ import {
 import './NodeContextMenu.css'
 
 interface Props {
-  node:     { id: string; label: string; name: string; props: any }
+  node:     { id: string; label: string; name: string; props?: any }
   position: { x: number; y: number }
   onClose:  () => void
   onExpand: (nodeId: string, hops: number) => void
