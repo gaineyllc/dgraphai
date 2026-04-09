@@ -31,6 +31,7 @@ from src.dgraphai.auth.audit         import audit_router
 from src.dgraphai.auth.scim          import router as scim_router, mgmt_router as scim_mgmt_router
 from src.dgraphai.auth.saml          import router as saml_router, mgmt_router as saml_mgmt_router
 from src.dgraphai.api.settings       import router as settings_router
+from src.dgraphai.api.search         import router as search_router
 from src.dgraphai.webhooks.outbound  import webhook_router
 from src.dgraphai.observability.metrics import setup_metrics
 from src.dgraphai.api.inventory       import router as inventory_router
@@ -112,6 +113,7 @@ app.include_router(saml_router)
 app.include_router(saml_mgmt_router)
 app.include_router(settings_router)
 app.include_router(webhook_router)
+app.include_router(search_router)
 
 # Protected API routes
 app.include_router(graph_router)

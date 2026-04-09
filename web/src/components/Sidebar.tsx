@@ -7,6 +7,7 @@ import {
   Shield, Activity, Settings, Layers, PlugZap,
   LayoutGrid, Wrench, BarChart2
 } from 'lucide-react'
+import { GlobalSearch } from './GlobalSearch'
 
 const NAV = [
   { to: '/',        icon: Network,    label: 'Graph'      },
@@ -27,9 +28,11 @@ export function Sidebar({}: Props) {
   return (
     <aside className="w-14 flex flex-col items-center bg-[#12121a] border-r border-[#252535] py-3 gap-1 flex-shrink-0">
       {/* Logo */}
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4f8ef7] to-[#8b5cf6] flex items-center justify-center mb-3">
+      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4f8ef7] to-[#8b5cf6] flex items-center justify-center mb-2">
         <Layers size={16} className="text-white" />
       </div>
+      {/* Global search trigger */}
+      <div className="w-10 mb-1"><GlobalSearch /></div>
 
       {/* Nav items */}
       {NAV.map(({ to, icon: Icon, label }) => (
