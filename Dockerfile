@@ -1,39 +1,32 @@
-# fsgraph API — multi-stage Docker build
-# Stage 1: build frontend
-FROM node:22-alpine AS frontend-build
-WORKDIR /app/web
-COPY web/package*.json ./
-RUN npm ci --omit=dev
-COPY web/ ./
-RUN npm run build
+FROM python:3.12-slim
 
-# Stage 2: Python runtime
-FROM python:3.14-slim AS runtime
-
-# Security: non-root user
-RUN groupadd -r fsgraph && useradd -r -g fsgraph fsgraph
-
-WORKDIR /app
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential curl git \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Python deps
+WORKDIR /app
+
+# Install Python deps first (cache layer)
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-editable
+RUN uv sync --frozen --no-dev
 
-# App source
-COPY src/ ./src/
+# Copy source
+COPY . .
 
-# Frontend build artifacts
-COPY --from=frontend-build /app/web/dist ./web/dist
+# Build frontend
+RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm \
+    && rm -rf /var/lib/apt/lists/*
+RUN cd web && npm ci && npm run build
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD python -c "import httpx; httpx.get('http://localhost:7474/api/health').raise_for_status()"
+# Security: run as non-root
+RUN useradd -m -u 1000 dgraphai && chown -R dgraphai:dgraphai /app
+USER dgraphai
 
-USER fsgraph
-EXPOSE 7474
+EXPOSE 8000
+ENV PYTHONPATH=/app
 
-CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "7474", \
-     "--workers", "4", "--loop", "uvloop", "--log-level", "info"]
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

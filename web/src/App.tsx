@@ -11,6 +11,8 @@ import { ConnectorsPage }   from './pages/ConnectorsPage'
 import { InventoryPage }    from './pages/InventoryPage'
 import { QueryBuilder }     from './pages/QueryBuilder'
 import { UsagePage }       from './pages/UsagePage'
+import { AuthProvider }       from './components/AuthProvider'
+import { AuthGuard }          from './components/AuthGuard'
 import { LoginPage }          from './pages/auth/LoginPage'
 import { SignupPage }         from './pages/auth/SignupPage'
 import { ForgotPasswordPage }  from './pages/auth/ForgotPasswordPage'
@@ -85,7 +87,11 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AppShell />
+        <AuthProvider>
+          <AuthGuard>
+            <AppShell />
+          </AuthGuard>
+        </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   )

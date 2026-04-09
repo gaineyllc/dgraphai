@@ -10,11 +10,20 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
+  const token = localStorage.getItem('dgraphai_token') || ''
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : {},
+    headers: {
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
   })
+  if (res.status === 401) {
+    localStorage.removeItem('dgraphai_token')
+    window.location.href = '/login'
+    throw new Error('Unauthorized')
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(err.detail ?? res.statusText)
