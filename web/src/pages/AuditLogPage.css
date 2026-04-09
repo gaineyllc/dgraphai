@@ -1,0 +1,50 @@
+.audit-page { flex: 1; overflow-y: auto; padding: 20px 24px 48px; background: #0a0a0f; display: flex; flex-direction: column; gap: 16px; scrollbar-width: thin; }
+.audit-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.audit-header h1 { font-size: 20px; font-weight: 700; color: #e2e2f0; }
+.audit-header p  { font-size: 12px; color: #55557a; margin-top: 2px; }
+.audit-header-actions { display: flex; gap: 8px; }
+.audit-btn-ghost { display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 7px; border: 1px solid #252535; background: transparent; color: #8888aa; font-size: 12px; cursor: pointer; transition: all .15s; }
+.audit-btn-ghost:hover:not(:disabled) { border-color: #4f8ef7; color: #4f8ef7; }
+.audit-btn-ghost:disabled { opacity: .4; cursor: not-allowed; }
+
+.audit-filters { display: flex; align-items: center; gap: 12px; }
+.audit-filter-tabs { display: flex; gap: 2px; }
+.audit-filter-tab { padding: 5px 12px; border-radius: 7px; border: none; background: transparent; color: #55557a; font-size: 12px; cursor: pointer; transition: all .12s; }
+.audit-filter-tab:hover { color: #c8c8e0; background: #12121a; }
+.audit-filter-tab.active { background: #1a1a28; color: #e2e2f0; font-weight: 600; }
+
+.audit-table-wrap { border-radius: 10px; border: 1px solid #1a1a28; overflow: hidden; }
+.audit-table { width: 100%; border-collapse: collapse; font-size: 12px; background: #0e0e16; }
+.audit-table thead th { padding: 9px 12px; text-align: left; background: #12121a; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #35354a; border-bottom: 1px solid #1a1a28; white-space: nowrap; }
+.audit-row { border-bottom: 1px solid #0d0d14; cursor: pointer; transition: background .1s; }
+.audit-row:hover, .audit-row.expanded { background: #12121f; }
+.audit-row td { padding: 9px 12px; vertical-align: middle; }
+.audit-ts { color: #8888aa; font-size: 11px; white-space: nowrap; font-family: monospace; }
+.audit-action { font-size: 11px; padding: 2px 7px; border-radius: 6px; font-family: monospace; background: #1a1a28; color: #8888aa; }
+.audit-action-auth { background: rgba(79,142,247,.1); color: #4f8ef7; }
+.audit-action-user { background: rgba(236,72,153,.1); color: #ec4899; }
+.audit-action-connector { background: rgba(16,185,129,.1); color: #10b981; }
+.audit-action-query { background: rgba(139,92,246,.1); color: #8b5cf6; }
+.audit-resource { color: #c8c8e0; font-size: 11px; font-family: monospace; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.audit-user { display: flex; align-items: center; gap: 5px; color: #8888aa; font-size: 11px; white-space: nowrap; }
+.audit-ip   { color: #55557a; font-size: 11px; font-family: monospace; white-space: nowrap; }
+.audit-null { color: #252535; }
+.audit-chevron { color: #35354a; transition: transform .15s; }
+.audit-chevron.rotated { transform: rotate(180deg); }
+
+/* Detail row */
+.audit-detail-row td { padding: 0; background: #0a0a0f; }
+.audit-detail { padding: 14px 16px; border-bottom: 1px solid #1a1a28; }
+.audit-detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.audit-detail-grid > div { display: flex; flex-direction: column; gap: 3px; }
+.audit-detail-grid span { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: #35354a; font-weight: 700; }
+.audit-detail-grid code { font-size: 11px; color: #c8c8e0; font-family: monospace; }
+.audit-detail-json { background: #12121a; border-radius: 7px; padding: 10px 12px; overflow-x: auto; }
+.audit-detail-json pre { margin: 0; font-size: 11px; color: #8888aa; font-family: monospace; }
+
+.audit-pagination { display: flex; align-items: center; gap: 12px; justify-content: center; padding: 4px; }
+.audit-page-info  { font-size: 12px; color: #55557a; }
+.audit-empty { padding: 40px; text-align: center; color: #35354a; font-size: 13px; }
+.audit-loading { padding: 40px; text-align: center; color: #35354a; }
+.audit-spin { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

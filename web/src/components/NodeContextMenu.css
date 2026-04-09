@@ -1,0 +1,26 @@
+.ctx-menu {
+  background: #0e0e16; border: 1px solid #252535; border-radius: 10px;
+  min-width: 220px; box-shadow: 0 12px 40px rgba(0,0,0,.6); overflow: hidden;
+}
+.ctx-header {
+  padding: 10px 12px 8px; border-bottom: 1px solid #1a1a28;
+  position: relative; padding-right: 28px;
+}
+.ctx-node-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #4f8ef7; margin-bottom: 2px; }
+.ctx-node-name  { font-size: 12px; font-weight: 600; color: #d0d0e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.ctx-close { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #35354a; cursor: pointer; padding: 2px; border-radius: 4px; display: flex; align-items: center; }
+.ctx-close:hover { color: #8888aa; background: #1a1a28; }
+
+.ctx-actions { padding: 4px 0; }
+.ctx-action {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 12px; width: 100%; background: none; border: none;
+  cursor: pointer; text-align: left; transition: background .1s;
+}
+.ctx-action:hover { background: #1a1a28; }
+.ctx-action-icon { color: #55557a; flex-shrink: 0; transition: color .1s; }
+.ctx-action:hover .ctx-action-icon { color: #4f8ef7; }
+.ctx-action-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ctx-action-label { font-size: 12px; color: #c8c8e0; white-space: nowrap; }
+.ctx-action-sub   { font-size: 10px; color: #35354a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+.ctx-divider { height: 1px; background: #1a1a28; margin: 3px 0; }

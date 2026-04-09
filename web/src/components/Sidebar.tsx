@@ -5,7 +5,7 @@ import { NavLink } from 'react-router-dom'
 import {
   Network, Search, HardDrive, Terminal,
   Shield, Activity, Settings, Layers, PlugZap,
-  LayoutGrid, Wrench, BarChart2
+  LayoutGrid, Wrench, BarChart2, ClipboardList
 } from 'lucide-react'
 import { GlobalSearch } from './GlobalSearch'
 
@@ -16,7 +16,8 @@ const NAV = [
   { to: '/connectors', icon: PlugZap,    label: 'Connectors' },
   { to: '/inventory',  icon: LayoutGrid, label: 'Inventory'  },
   { to: '/builder',    icon: Wrench,     label: 'Builder'    },
-  { to: '/usage',      icon: BarChart2,  label: 'Usage'      },
+  { to: '/usage',      icon: BarChart2,     label: 'Usage'     },
+  { to: '/audit',      icon: ClipboardList, label: 'Audit Log' },
   { to: '/query',      icon: Terminal,   label: 'Query'      },
   { to: '/security',icon: Shield,     label: 'Security'   },
   { to: '/indexer', icon: Activity,   label: 'Indexer'    },
