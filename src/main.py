@@ -26,6 +26,7 @@ from src.dgraphai.api.alerts      import router as alerts_router
 from src.dgraphai.api.compliance  import router as compliance_router
 from src.dgraphai.api.connectors_full import router as connectors_router
 from src.dgraphai.api.inventory       import router as inventory_router
+from src.dgraphai.api.inventory_search import router as inv_search_router
 from src.dgraphai.api.schema          import router as schema_router
 from src.dgraphai.api.usage           import router as usage_router
 from src.dgraphai.graphql.schema      import make_graphql_router
@@ -79,6 +80,7 @@ app.include_router(alerts_router)
 app.include_router(compliance_router)
 app.include_router(connectors_router)
 app.include_router(inventory_router)
+app.include_router(inv_search_router)
 app.include_router(schema_router)
 app.include_router(usage_router)
 app.include_router(mounts_router)

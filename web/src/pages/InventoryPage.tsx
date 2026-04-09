@@ -13,19 +13,22 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import {
   Search, ChevronRight, Database, Layers,
-  X, ExternalLink, ArrowUpRight, Copy, Tag
+  X, ExternalLink, ArrowUpRight, Sparkles,
+  AlertCircle, Loader2, CornerDownLeft
 } from 'lucide-react'
 import './InventoryPage.css'
 
 // ── API ────────────────────────────────────────────────────────────────────────
 
 const api = {
-  list:   ()                          => fetch('/api/inventory').then(r => r.json()),
-  detail: (id: string, page: number, pageSize = 25) =>
-    fetch(`/api/inventory/${id}?page=${page}&page_size=${pageSize}`).then(r => r.json()),
+  list:    ()                              => fetch('/api/inventory').then(r => r.json()),
+  detail:  (id: string, page: number, ps = 25) =>
+    fetch(`/api/inventory/${id}?page=${page}&page_size=${ps}`).then(r => r.json()),
+  search:  (q: string)                    => fetch(`/api/inventory/search?q=${encodeURIComponent(q)}`).then(r => r.json()),
+  suggest: (q: string)                    => fetch(`/api/inventory/search/suggest?q=${encodeURIComponent(q)}&limit=8`).then(r => r.json()),
 }
 
 // ── Entry point ────────────────────────────────────────────────────────────────
@@ -45,7 +48,7 @@ export function InventoryPage() {
 // ── Root ───────────────────────────────────────────────────────────────────────
 
 function InventoryRoot({ onNavigate }) {
-  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
 
   const { data, isLoading } = useQuery({
     queryKey: ['inventory'],
@@ -54,24 +57,16 @@ function InventoryRoot({ onNavigate }) {
   })
 
   const groups: Record<string, any[]> = data?.groups ?? {}
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return groups
-    const q = search.toLowerCase()
-    const out: Record<string, any[]> = {}
-    for (const [g, cats] of Object.entries(groups)) {
-      const match = cats.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q) ||
-        c.tags?.some(t => t.includes(q))
-      )
-      if (match.length) out[g] = match
-    }
-    return out
-  }, [groups, search])
-
   const allCats    = Object.values(groups).flat()
   const totalNodes = allCats.reduce((s, c) => s + (c.count ?? 0), 0)
+
+  const handleNLResult = (result: any) => {
+    if (result.matched_category) {
+      onNavigate(result.matched_category)
+    } else if (result.query_url?.startsWith('/query')) {
+      navigate(result.query_url)
+    }
+  }
 
   return (
     <div className="inventory-page">
@@ -92,13 +87,8 @@ function InventoryRoot({ onNavigate }) {
         </div>
       </div>
 
-      <div className="inv-search-row">
-        <div className="inv-search">
-          <Search size={13} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter categories…" />
-          {search && <button className="inv-search-clear" onClick={() => setSearch('')}>✕</button>}
-        </div>
-      </div>
+      {/* Natural language search */}
+      <NLSearchBar onResult={handleNLResult} onNavigate={onNavigate} />
 
       {isLoading ? <LoadingSkeleton /> : (
         <div className="inv-groups">
@@ -118,9 +108,7 @@ function InventoryRoot({ onNavigate }) {
               </div>
             )
           })}
-          {!Object.keys(filtered).length && search && (
-            <div className="inv-no-results">No categories match <strong>"{search}"</strong></div>
-          )}
+
         </div>
       )}
     </div>
@@ -420,6 +408,160 @@ function PropValue({ k, v }) {
   if (s.length > 80)
     return <span className="inv-prop-long" title={s}>{s.slice(0, 80)}…</span>
   return <span className="inv-prop-text">{s}</span>
+}
+
+// ── NL Search bar ─────────────────────────────────────────────────────────────
+
+function NLSearchBar({ onResult, onNavigate }) {
+  const navigate    = useNavigate()
+  const [value,       setValue]       = useState('')
+  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [result,      setResult]      = useState<any | null>(null)
+  const [loading,     setLoading]     = useState(false)
+  const [open,        setOpen]        = useState(false)
+  const inputRef    = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<any>(null)
+
+  // Typeahead: fetch suggestions as user types
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!value.trim() || value.length < 2) {
+      setSuggestions([])
+      setOpen(false)
+      return
+    }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const s = await api.suggest(value)
+        setSuggestions(s)
+        setOpen(s.length > 0)
+      } catch { setSuggestions([]) }
+    }, 180)
+  }, [value])
+
+  const runSearch = async (q = value) => {
+    if (!q.trim()) return
+    setLoading(true)
+    setOpen(false)
+    try {
+      const r = await api.search(q)
+      if (r.matched_category) {
+        // Any category match: navigate immediately
+        onNavigate(r.matched_category)
+        setValue('')
+        setResult(null)
+      } else {
+        // No category match: show no-match card with suggestions
+        setResult(r)
+      }
+    } catch { /* ignore */ }
+    finally { setLoading(false) }
+  }
+
+  const pickSuggestion = (s: any) => {
+    setValue(s.name)
+    setSuggestions([])
+    setOpen(false)
+    onNavigate(s.id)
+  }
+
+  const clear = () => {
+    setValue('')
+    setResult(null)
+    setSuggestions([])
+    setOpen(false)
+    inputRef.current?.focus()
+  }
+
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter')  runSearch()
+    if (e.key === 'Escape') clear()
+  }
+
+  return (
+    <div className="nl-search-wrap">
+      {/* Search input */}
+      <div className={`nl-search-bar ${open || result ? 'nl-bar-active' : ''}`}>
+        <Sparkles size={14} className="nl-bar-icon" />
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={onKey}
+          onFocus={() => suggestions.length && setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder='Search your data — try “4K HDR movies”, “exposed passwords”, “photos with faces”…'
+          className="nl-search-input"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        {loading && <Loader2 size={13} className="nl-bar-loading" />}
+        {value && !loading && (
+          <button onClick={clear} className="nl-bar-clear"><X size={12} /></button>
+        )}
+        <div className="nl-bar-hint">
+          <CornerDownLeft size={11} /> Search
+        </div>
+      </div>
+
+      {/* Typeahead dropdown */}
+      <AnimatePresence>
+        {open && suggestions.length > 0 && (
+          <motion.div
+            className="nl-suggestions"
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+          >
+            {suggestions.map(s => (
+              <button key={s.id} className="nl-suggestion-item" onMouseDown={() => pickSuggestion(s)}>
+                <span className="nl-sug-icon">{s.icon}</span>
+                <span className="nl-sug-name">{s.name}</span>
+                <span className="nl-sug-desc">{s.description}</span>
+                <ChevronRight size={11} className="nl-sug-arrow" />
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* No-match card — category not found, offer suggestions + Graph escape */}
+      <AnimatePresence>
+        {result && !result.matched_category && (
+          <motion.div
+            className="nl-result-card"
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          >
+            <div className="nl-result-header">
+              <AlertCircle size={13} className="nl-result-icon" />
+              <span>No data category found for <strong>“{value}”</strong></span>
+              {result.no_match_query_url && (
+                <button
+                  onClick={() => { navigate(result.no_match_query_url); clear() }}
+                  className="nl-result-run"
+                  title="Search the graph for this term"
+                >
+                  Search Graph <ArrowUpRight size={11} />
+                </button>
+              )}
+              <button onClick={clear} className="nl-result-close"><X size={12} /></button>
+            </div>
+            {result.suggestions?.length > 0 && (
+              <div className="nl-result-suggestions">
+                <span className="nl-result-label">Did you mean:</span>
+                {result.suggestions.slice(0, 5).map(s => (
+                  <button key={s.id} className="nl-result-sug"
+                    style={{ '--c': s.color } as any}
+                    onMouseDown={() => { onNavigate(s.id); clear() }}>
+                    {s.icon} {s.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
 }
 
 // ── Category card ──────────────────────────────────────────────────────────────
