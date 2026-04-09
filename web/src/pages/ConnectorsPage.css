@@ -220,6 +220,13 @@
   background: #4f8ef7; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
 }
 .cp-btn-save:disabled { opacity: .5; cursor: not-allowed; }
+.cp-schedule-select {
+  background: #0a0a0f; border: 1px solid #1a1a28; border-radius: 5px;
+  color: #55557a; font-size: 11px; padding: 3px 6px; cursor: pointer;
+  transition: border-color .1s;
+}
+.cp-schedule-select:hover, .cp-schedule-select:focus { border-color: #4f8ef7; color: #8888aa; outline: none; }
+
 .cp-spin { animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .cp-loading { padding: 40px; text-align: center; color: #35354a; }

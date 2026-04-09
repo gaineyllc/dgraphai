@@ -29,6 +29,9 @@ const UsagePage        = lazy(() => import('./pages/UsagePage').then(m => ({ def
 const SettingsPage     = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const AuditLogPage     = lazy(() => import('./pages/AuditLogPage').then(m => ({ default: m.AuditLogPage })))
 const GraphDiffPage    = lazy(() => import('./pages/GraphDiffPage').then(m => ({ default: m.GraphDiffPage })))
+const NotFoundPage     = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })))
+const LegalPage        = lazy(() => import('./pages/LegalPage').then(m => ({ default: m.LegalPage })))
+const VerifyEmailPage  = lazy(() => import('./pages/auth/VerifyEmailPage').then(m => ({ default: m.VerifyEmailPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +88,10 @@ function AppShell() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password"  element={<ResetPasswordPage />} />
             <Route path="/accept-invite"   element={<AcceptInvitePage />} />
+            <Route path="/verify-email"    element={<VerifyEmailPage />} />
+            <Route path="/legal/:type"     element={<LegalPage />} />
+            <Route path="/terms"           element={<LegalPage />} />
+            <Route path="/privacy"         element={<LegalPage />} />
 
             {/* App routes — lazy */}
             <Route path="/"           element={<GraphPage />} />
@@ -100,6 +107,7 @@ function AppShell() {
             <Route path="/settings"   element={<SettingsPage />} />
             <Route path="/audit"      element={<AuditLogPage />} />
             <Route path="/diff"       element={<GraphDiffPage />} />
+            <Route path="*"           element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </main>

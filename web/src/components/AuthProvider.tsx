@@ -4,6 +4,7 @@
  */
 import { createContext, useContext, useState, useEffect } from 'react'
 import { getCurrentUser, clearToken, isAuthenticated } from '../lib/auth'
+import { useSessionExpiry } from '../hooks/useSessionExpiry'
 
 interface User {
   id: string; email: string; name: string; tenant_id: string; plan: string
@@ -24,6 +25,8 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user,    setUser]    = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+
+  useSessionExpiry()
 
   useEffect(() => {
     if (isAuthenticated()) {

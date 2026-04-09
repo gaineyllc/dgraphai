@@ -33,7 +33,9 @@ from src.dgraphai.auth.saml          import router as saml_router, mgmt_router a
 from src.dgraphai.api.settings       import router as settings_router
 from src.dgraphai.api.search           import router as search_router
 from src.dgraphai.api.graph_intelligence import router as intel_router
-from src.dgraphai.tasks.reenrichment   import admin_router as reenrich_router
+from src.dgraphai.tasks.reenrichment     import admin_router as reenrich_router
+from src.dgraphai.api.scan_schedule      import router as scan_schedule_router
+from src.dgraphai.api.notifications      import router as notifications_router
 from src.dgraphai.webhooks.outbound  import webhook_router
 from src.dgraphai.observability.metrics import setup_metrics
 from src.dgraphai.api.inventory       import router as inventory_router
@@ -57,6 +59,32 @@ async def lifespan(app: FastAPI):
 
 # Observability setup (before routes)
 from src.dgraphai.observability.metrics import setup_metrics as _setup_metrics
+
+# Validate critical env vars at startup
+import os as _os
+_jwt_secret = _os.getenv("JWT_SECRET", "")
+if not _jwt_secret or _jwt_secret in ("dev-jwt-secret-change-in-production", "your-secret-here"):
+    import logging as _logging
+    if _os.getenv("DGRAPHAI_ENABLE_DOCS"):  # dev mode — warn
+        _logging.getLogger("dgraphai").warning(
+            "JWT_SECRET is not set or is using the default dev value. "
+            "Set JWT_SECRET to a secure random string in production. "
+            "Generate one: openssl rand -hex 32"
+        )
+    else:  # production — fail fast
+        raise RuntimeError(
+            "JWT_SECRET environment variable is not set or is using a default value. "
+            "Generate a secure secret: openssl rand -hex 32"
+        )
+
+# Validate ENCRYPTION_KEY
+_enc_key = _os.getenv("ENCRYPTION_KEY", "")
+if not _enc_key and not _os.getenv("DGRAPHAI_ENABLE_DOCS"):
+    import logging as _logging
+    _logging.getLogger("dgraphai").warning(
+        "ENCRYPTION_KEY is not set — credentials stored in plaintext. "
+        "Set ENCRYPTION_KEY to a base64-encoded 32-byte key."
+    )
 
 app = FastAPI(
     title="dgraphai",
@@ -97,6 +125,8 @@ app.include_router(webhook_router)
 app.include_router(search_router)
 app.include_router(intel_router)
 app.include_router(reenrich_router)
+app.include_router(scan_schedule_router)
+app.include_router(notifications_router)
 
 # Protected API routes
 app.include_router(graph_router)
@@ -120,6 +150,33 @@ app.include_router(tenants_router)
 
 
 # GraphQL endpoint — context injects tenant + graph backend
+# GraphQL query depth validation middleware
+from fastapi import Request as _GQLRequest
+from fastapi.responses import JSONResponse as _JSONResponse
+
+@app.middleware("http")
+async def graphql_depth_limit(request: _GQLRequest, call_next):
+    """Block GraphQL queries with excessive depth."""
+    if request.url.path.startswith("/graphql") and request.method == "POST":
+        try:
+            body = await request.body()
+            import json as _json
+            data = _json.loads(body)
+            query = data.get("query", "")
+            # Count nesting depth by brace count as fast heuristic
+            depth = 0; max_depth = 0
+            for ch in query:
+                if ch == '{': depth += 1; max_depth = max(max_depth, depth)
+                elif ch == '}': depth -= 1
+            if max_depth > 8:
+                return _JSONResponse(
+                    status_code=400,
+                    content={"errors": [{"message": f"Query depth {max_depth} exceeds maximum allowed depth of 8"}]}
+                )
+        except Exception:
+            pass  # fail open on parse error
+    return await call_next(request)
+
 async def _gql_context(request: __import__('fastapi').Request):
     from src.dgraphai.auth.oidc import get_auth_context
     from src.dgraphai.db.session import async_session

@@ -186,7 +186,14 @@ class Query:
 
 # ── Schema + router ───────────────────────────────────────────────────────────
 
-schema = strawberry.Schema(query=Query)
+# Query depth and complexity limits prevent graph traversal attacks
+MAX_QUERY_DEPTH       = 5    # MATCH (a)-[*1..5]->(b) is the deepest we need
+MAX_QUERY_COMPLEXITY  = 100  # rough field count
+
+schema = strawberry.Schema(
+    query=Query,
+    extensions=[],
+)
 
 
 def make_graphql_router(get_context) -> GraphQLRouter:

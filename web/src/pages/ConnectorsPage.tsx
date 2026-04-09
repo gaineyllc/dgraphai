@@ -158,6 +158,16 @@ export function ConnectorsPage() {
 
 // ── Connector card ─────────────────────────────────────────────────────────────
 
+const SCHEDULE_OPTIONS = [
+  { value: 'manual', label: 'Manual' },
+  { value: '1h',     label: 'Every 1h' },
+  { value: '6h',     label: 'Every 6h' },
+  { value: '12h',    label: 'Every 12h' },
+  { value: '24h',    label: 'Every 24h' },
+  { value: '48h',    label: 'Every 48h' },
+  { value: 'weekly', label: 'Weekly' },
+]
+
 function ConnectorCard({ connector: c, onTest, onEdit, onDelete, testing }) {
   const [expanded, setExpanded] = useState(false)
   const color  = TYPE_COLORS[c.connector_type] ?? '#6b7280'
@@ -253,6 +263,19 @@ function ConnectorCard({ connector: c, onTest, onEdit, onDelete, testing }) {
           Test
         </button>
         <button onClick={onEdit}   className="cp-action-btn" title="Edit"><Settings size={12} /> Edit</button>
+        {/* Scan schedule */}
+        <select
+          className="cp-schedule-select"
+          value={c.config?.scan_schedule || 'manual'}
+          onChange={async e => {
+            await apiFetch(`/api/connectors/${c.id}/schedule`, {
+              method: 'PATCH', body: JSON.stringify({ schedule: e.target.value })
+            })
+          }}
+          title="Automatic scan schedule"
+        >
+          {SCHEDULE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
         <button onClick={onDelete} className="cp-action-btn cp-action-danger" title="Delete"><Trash2 size={12} /></button>
 
         {/* Test result */}

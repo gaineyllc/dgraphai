@@ -6,11 +6,14 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, Loader2, AlertCircle, ShieldCheck } from 'lucide-react'
+import { Eye, EyeOff, Loader2, AlertCircle, ShieldCheck, Clock } from 'lucide-react'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import './Auth.css'
 
 export function LoginPage() {
-  const navigate = useNavigate()
+  const navigate   = useNavigate()
+  const locState   = useLocation().state as any
+  const wasExpired = locState?.expired
   const [email,      setEmail]    = useState('')
   const [password,   setPassword] = useState('')
   const [mfaCode,    setMFACode]  = useState('')
@@ -70,6 +73,11 @@ export function LoginPage() {
         <h1 className="auth-title">Sign in</h1>
         <p className="auth-sub">Welcome back to your knowledge graph</p>
 
+        {wasExpired && (
+          <div className="auth-error" style={{ background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.2)', color: '#f59e0b' }}>
+            <Clock size={14} /> Your session expired. Please sign in again.
+          </div>
+        )}
         {error && (
           <div className="auth-error">
             <AlertCircle size={14} /> {error}
