@@ -1,0 +1,147 @@
+.usage-page {
+  flex: 1; overflow-y: auto; padding: 20px 24px 48px;
+  background: #0a0a0f; display: flex; flex-direction: column; gap: 20px;
+  scrollbar-width: thin;
+}
+.usage-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.usage-header h1 { font-size: 20px; font-weight: 700; color: #e2e2f0; }
+.usage-header p  { font-size: 12px; color: #55557a; margin-top: 2px; }
+.usage-plan-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; background: #12121a; border: 1px solid #252535; border-radius: 20px;
+  font-size: 12px; font-weight: 600; color: #8888aa;
+}
+.usage-plan-badge svg { color: #fbbf24; }
+
+/* Limit bar */
+.usage-limit-bar {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 14px; background: #12121a; border: 1px solid #1a1a28; border-radius: 10px;
+  font-size: 12px;
+}
+.usage-limit-label { color: #55557a; font-weight: 600; }
+.usage-limit-track {
+  flex: 1; height: 5px; background: #1a1a28; border-radius: 10px; overflow: hidden;
+}
+.usage-limit-fill  { height: 100%; border-radius: 10px; transition: width .4s; }
+.usage-limit-num   { font-size: 11px; color: #55557a; white-space: nowrap; }
+.usage-limit-pct   { font-size: 11px; font-weight: 700; white-space: nowrap; }
+
+/* Section titles */
+.usage-section-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: #35354a; margin-bottom: -8px;
+}
+
+/* Tier cards */
+.usage-tiers { display: flex; flex-direction: column; gap: 6px; }
+.usage-tier-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; background: #0e0e16; border: 1px solid #1a1a28;
+  border-left: 3px solid var(--tc, #252535); border-radius: 10px;
+  transition: background .12s;
+}
+.usage-tier-card:hover { background: #12121f; }
+.usage-tier-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--tc) 12%, transparent); color: var(--tc); flex-shrink: 0; }
+.usage-tier-body { flex: 1; min-width: 0; }
+.usage-tier-name { font-size: 13px; font-weight: 600; color: #d0d0e8; }
+.usage-tier-desc { font-size: 11px; color: #55557a; margin-top: 2px; }
+.usage-tier-right { text-align: right; flex-shrink: 0; }
+.usage-tier-count { font-size: 20px; font-weight: 800; color: var(--tc); font-variant-numeric: tabular-nums; }
+.usage-tier-unit  { font-size: 9px; text-transform: uppercase; letter-spacing: .07em; color: #35354a; }
+.usage-tier-cost  { font-size: 11px; color: #55557a; margin-top: 2px; }
+
+/* Enrichment grid */
+.usage-enrich-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.usage-enrich-stat {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px; background: #0e0e16; border: 1px solid #1a1a28; border-radius: 8px;
+  min-width: 180px;
+}
+.usage-enrich-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.usage-enrich-label{ font-size: 12px; color: #8888aa; flex: 1; }
+.usage-enrich-val  { font-size: 13px; font-weight: 700; color: #d0d0e8; font-variant-numeric: tabular-nums; }
+
+/* Cost card */
+.usage-cost-card {
+  background: #0e0e16; border: 1px solid #1a1a28; border-radius: 12px; overflow: hidden;
+}
+.usage-cost-items   { display: flex; flex-direction: column; }
+.usage-cost-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-bottom: 1px solid #0d0d14;
+  font-size: 13px;
+}
+.usage-cost-row svg  { flex-shrink: 0; }
+.usage-cost-label    { flex: 1; color: #8888aa; }
+.usage-cost-amount   { font-weight: 600; color: #d0d0e8; font-variant-numeric: tabular-nums; }
+.usage-cost-divider  { height: 1px; background: #1a1a28; margin: 0 16px; }
+.usage-cost-discount {
+  display: flex; align-items: center; gap: 6px; padding: 8px 16px;
+  font-size: 11px; color: #10b981;
+}
+.usage-cost-total {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; font-size: 13px; font-weight: 700; color: #e2e2f0;
+}
+.usage-cost-total-num { font-size: 24px; color: #4f8ef7; }
+.usage-cost-total-num span { font-size: 13px; color: #55557a; font-weight: 400; }
+
+/* Rate cards */
+.usage-rate-cards { display: flex; flex-direction: column; gap: 6px; }
+.usage-rate-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; background: #0e0e16; border: 1px solid #1a1a28;
+  border-left: 2px solid var(--tc, #252535); border-radius: 10px;
+}
+.usage-rate-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--tc) 12%, transparent); color: var(--tc); flex-shrink: 0; }
+.usage-rate-body { flex: 1; min-width: 0; }
+.usage-rate-name { font-size: 13px; font-weight: 600; color: #d0d0e8; }
+.usage-rate-desc { font-size: 11px; color: #55557a; margin-top: 2px; }
+.usage-rate-examples { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.usage-rate-ex { font-size: 10px; padding: 1px 7px; background: #12121a; border: 1px solid #252535; border-radius: 8px; color: #55557a; }
+.usage-rate-price { text-align: right; flex-shrink: 0; }
+.usage-rate-amount { font-size: 18px; font-weight: 800; color: #e2e2f0; font-variant-numeric: tabular-nums; }
+.usage-rate-unit   { font-size: 10px; color: #35354a; text-align: right; }
+
+.usage-free-rels {
+  display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap;
+  padding: 10px 14px; background: #0d0d14; border-radius: 9px; margin-top: 6px;
+  font-size: 11px; color: #35354a;
+}
+.usage-free-rels svg { flex-shrink: 0; margin-top: 1px; }
+.usage-free-list { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+.usage-rel-badge { padding: 1px 6px; background: #1a1a28; border-radius: 6px; color: #55557a; font-size: 10px; font-family: monospace; }
+
+/* Plans grid */
+.usage-plans-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.usage-plan-card {
+  background: #0e0e16; border: 1px solid #1a1a28; border-radius: 12px;
+  padding: 16px; display: flex; flex-direction: column; gap: 10px; position: relative;
+  transition: border-color .15s;
+}
+.usage-plan-current { border-color: #4f8ef7; }
+.usage-plan-current-badge {
+  position: absolute; top: -1px; right: 14px;
+  padding: 2px 10px; background: #4f8ef7; border-radius: 0 0 8px 8px;
+  font-size: 10px; font-weight: 700; color: #fff; letter-spacing: .05em;
+}
+.usage-plan-name  { font-size: 14px; font-weight: 700; color: #e2e2f0; }
+.usage-plan-fee   { display: flex; align-items: baseline; gap: 4px; font-size: 13px; color: #55557a; }
+.usage-plan-price { font-size: 26px; font-weight: 800; color: #e2e2f0; }
+.usage-plan-price-free { font-size: 20px; font-weight: 800; color: #10b981; }
+.usage-plan-price-custom { font-size: 16px; font-weight: 700; color: #fbbf24; }
+.usage-plan-included { font-size: 11px; color: #55557a; }
+.usage-plan-features { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.usage-plan-feat { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8888aa; }
+.usage-feat-yes { color: #10b981; flex-shrink: 0; }
+.usage-feat-no  { color: #252535; flex-shrink: 0; }
+.usage-feat-val { margin-left: auto; font-weight: 700; color: #4f8ef7; }
+.usage-plan-upgrade {
+  display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 4px;
+  padding: 8px; border-radius: 8px; border: 1px solid #252535;
+  background: none; color: #55557a; font-size: 12px; cursor: pointer; transition: all .15s;
+}
+.usage-plan-upgrade:hover { border-color: #4f8ef7; color: #4f8ef7; }
+
+.usage-loading { padding: 40px; text-align: center; color: #35354a; font-size: 13px; }
