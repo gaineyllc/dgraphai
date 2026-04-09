@@ -4,6 +4,8 @@ import { Sidebar } from './components/Sidebar'
 import { GraphPage } from './pages/GraphPage'
 import { MountsPage } from './pages/MountsPage'
 import { QueryWorkspace } from './pages/QueryWorkspace'
+import WorkflowBuilderPage from './pages/WorkflowBuilder'
+import { IndexerDashboard } from './pages/IndexerDashboard'
 import { useQuery } from '@tanstack/react-query'
 import { graphApi } from './lib/api'
 import { Terminal, Shield, Activity, Settings } from 'lucide-react'
@@ -30,7 +32,8 @@ function AppShell() {
           <Route path="/mounts"   element={<MountsPage />} />
           <Route path="/query"    element={<QueryWorkspace />} />
           <Route path="/security" element={<PlaceholderPage icon={Shield}   title="Security Intelligence" desc="EOL software, expired certs, secrets, PII exposure" />} />
-          <Route path="/indexer"  element={<PlaceholderPage icon={Activity} title="Indexer"              desc="Monitor real-time indexing progress" />} />
+          <Route path="/workflows" element={<WorkflowBuilderPage />} />
+          <Route path="/indexer"  element={<IndexerDashboard />} />
           <Route path="/settings" element={<PlaceholderPage icon={Settings} title="Settings"             desc="Configure fsgraph" />} />
         </Routes>
       </main>
