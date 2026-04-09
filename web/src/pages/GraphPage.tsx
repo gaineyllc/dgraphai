@@ -4,13 +4,13 @@
  * Center: interactive Cytoscape graph
  * Right panel: node properties (on selection)
  */
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { NodeTooltip } from '../components/NodeTooltip'
 import { InspectionPane } from '../components/InspectionPane'
 import '../components/inspection.css'
 import { useQuery } from '@tanstack/react-query'
-import { Search, X, ZoomIn, ZoomOut, Maximize2, ChevronRight } from 'lucide-react'
+import { Search, X, ChevronRight } from 'lucide-react'
 import { GraphCanvas } from '../components/GraphCanvas'
 import { graphApi, type GraphNode, type Subgraph, type SearchResult } from '../lib/api'
 
@@ -211,67 +211,6 @@ function EmptyState() {
       <div className="text-center">
         <div className="text-[#8888aa] font-medium">Search to explore</div>
         <div className="text-sm mt-1">Find files, people, or topics<br />then double-click nodes to expand</div>
-      </div>
-    </div>
-  )
-}
-
-function NodeDetail({ node, onClose, onExpand }: {
-  node: GraphNode
-  onClose: () => void
-  onExpand: (id: string) => void
-}) {
-  const props = node.props ?? {}
-  const importantKeys = ['file_category', 'size_bytes', 'resolution', 'hdr_type',
-    'eol_status', 'seeders', 'summary', 'sha256']
-
-  return (
-    <div className="w-80 flex flex-col border-l border-[#252535] bg-[#12121a] flex-shrink-0">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#252535]">
-        <div className="flex items-center gap-2 min-w-0">
-          <NodeDot label={node.label} />
-          <span className="text-sm font-medium text-[#e2e2f0] truncate">{node.name}</span>
-        </div>
-        <button onClick={onClose} className="text-[#55557a] hover:text-[#e2e2f0] flex-shrink-0 ml-2">
-          <X size={14} />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div>
-          <div className="text-xs text-[#55557a] uppercase tracking-wider mb-2">Type</div>
-          <span className="text-sm text-[#e2e2f0]">{node.label}</span>
-        </div>
-
-        {/* Key properties first */}
-        {importantKeys.filter(k => props[k] != null).map(k => (
-          <div key={k}>
-            <div className="text-xs text-[#55557a] uppercase tracking-wider mb-1">{k}</div>
-            <div className="text-sm text-[#e2e2f0] break-all">{formatProp(props[k])}</div>
-          </div>
-        ))}
-
-        {/* Remaining properties */}
-        {Object.entries(props)
-          .filter(([k, v]) => !importantKeys.includes(k) && v != null && k !== 'id')
-          .slice(0, 20)
-          .map(([k, v]) => (
-            <div key={k}>
-              <div className="text-xs text-[#55557a] mb-0.5">{k}</div>
-              <div className="text-xs text-[#8888aa] break-all">{formatProp(v)}</div>
-            </div>
-          ))
-        }
-      </div>
-
-      <div className="p-3 border-t border-[#252535]">
-        <button
-          onClick={() => onExpand(node.id)}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#4f8ef7]/10 border border-[#4f8ef7]/30 text-[#4f8ef7] text-sm rounded-lg hover:bg-[#4f8ef7]/20 transition-colors"
-        >
-          Expand neighbors
-          <ChevronRight size={14} />
-        </button>
       </div>
     </div>
   )

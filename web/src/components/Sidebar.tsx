@@ -6,7 +6,6 @@ import {
   Network, Search, HardDrive, Terminal,
   Shield, Activity, Settings, Layers
 } from 'lucide-react'
-import type { GraphStats } from '../lib/api'
 
 const NAV = [
   { to: '/',        icon: Network,    label: 'Graph'      },
@@ -17,11 +16,9 @@ const NAV = [
   { to: '/indexer', icon: Activity,   label: 'Indexer'    },
 ]
 
-interface Props {
-  stats?: GraphStats
-}
+interface Props {}
 
-export function Sidebar({ stats }: Props) {
+export function Sidebar({}: Props) {
   return (
     <aside className="w-14 flex flex-col items-center bg-[#12121a] border-r border-[#252535] py-3 gap-1 flex-shrink-0">
       {/* Logo */}

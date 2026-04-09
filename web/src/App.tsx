@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Sidebar } from './components/Sidebar'
 import { GraphPage } from './pages/GraphPage'
 import { MountsPage } from './pages/MountsPage'
+import { QueryWorkspace } from './pages/QueryWorkspace'
 import { useQuery } from '@tanstack/react-query'
 import { graphApi } from './lib/api'
 import { Terminal, Shield, Activity, Settings } from 'lucide-react'
@@ -22,12 +23,12 @@ function AppShell() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar stats={stats} />
+      <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
         <Routes>
           <Route path="/"         element={<GraphPage />} />
           <Route path="/mounts"   element={<MountsPage />} />
-          <Route path="/query"    element={<PlaceholderPage icon={Terminal}  title="Query Editor"        desc="Write Cypher queries against the knowledge graph" />} />
+          <Route path="/query"    element={<QueryWorkspace />} />
           <Route path="/security" element={<PlaceholderPage icon={Shield}   title="Security Intelligence" desc="EOL software, expired certs, secrets, PII exposure" />} />
           <Route path="/indexer"  element={<PlaceholderPage icon={Activity} title="Indexer"              desc="Monitor real-time indexing progress" />} />
           <Route path="/settings" element={<PlaceholderPage icon={Settings} title="Settings"             desc="Configure fsgraph" />} />

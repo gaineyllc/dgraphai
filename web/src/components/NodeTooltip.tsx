@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileText, Folder, User, MapPin, Building2,
   Tag, Cpu, ShieldAlert, Key, X, ChevronRight,
-  Clock, HardDrive, Eye, AlertTriangle
+  Clock, HardDrive, Eye
 } from 'lucide-react'
 import type { GraphNode } from '../lib/api'
 
