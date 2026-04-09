@@ -1,22 +1,4 @@
 @import "tailwindcss";
+@import "./design/palette-hct.css";
 @import "./design/tokens.css";
 @import "./design/base.css";
-
-/* ── Legacy aliases (backward compat with existing pages) ─────────────
-   These map old variable names to the new design token system.
-   Migrate pages to use the new tokens over time.
-─────────────────────────────────────────────────────────────────── */
-:root {
-  /* Old names → new tokens */
-  --bg-base:          var(--surface-0);
-  --bg-surface:       var(--surface-1);
-  --bg-raised:        var(--surface-3);
-  --bg-border:        var(--border-solid);
-  --text-muted:       var(--text-tertiary);
-  --accent-blue:      var(--color-primary);
-  --accent-purple:    var(--color-primary);
-  --accent-cyan:      var(--color-secondary);
-  --accent-green:     var(--color-success);
-  --accent-yellow:    var(--color-medium);
-  --accent-red:       var(--color-critical);
-}

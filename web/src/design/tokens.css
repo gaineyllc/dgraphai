@@ -1,141 +1,155 @@
 /**
  * dgraph.ai Design System — Material 3 Expressive Dark
+ * =====================================================
+ * Color roles are wired to HCT-generated values in palette-hct.css.
+ * Surface scale is pushed DARKER than M3 default (deeper blacks = our identity).
  *
- * NOT a Wiz clone. dgraph.ai's own palette:
- *   - Wiz: deep navy (#0D1117) with cold blue-gray cards
- *   - dgraph.ai: true black-violet (#08080e) with warm indigo cards
+ * Brand decision:
+ *   Wiz:       #0D1117 base, cold navy cards, generic #4B8BF5 blue
+ *   dgraph.ai: #09080c base, black-violet cards, HCT-derived #7c5cfc indigo
  *
- * Philosophy (M3 Expressive):
- *   - Primary: Electric indigo — ownable, tech-forward, distinctive
- *   - Secondary: Teal-cyan — data/connectivity associations
- *   - Tertiary: Coral/amber — used sparingly for emphasis
- *   - Error/Critical: Vivid red (system semantic)
- *   - Surface tones: 5-step scale from #08080e → #1e1e2e
- *   - Tonal elevation: each surface step = +7 brightness
- *
- * Material 3 concepts applied:
- *   - Tonal surface system (not flat gray stacks)
- *   - Color roles: primary, secondary, tertiary, error, neutral
- *   - Dynamic color containers: primary-container, on-primary-container
- *   - State layers: hover (8%), pressed (12%), focused (12%)
+ * Seed → palette mapping (from M3 spec, dark scheme):
+ *   primary 80 = main interactive color on dark
+ *   primary 30 = container background
+ *   primary 90 = text on container
+ *   neutral  6 = surface base
+ *   neutral 12 = cards
  */
 
 :root {
-  /* ── Brand / Primary ─────────────────────────────────────────────── */
-  --color-primary:            #7c5cfc;  /* Electric indigo — our signature */
-  --color-primary-dim:        #6344e8;  /* Hover/active state */
-  --color-primary-bright:     #9b7dff;  /* On dark surfaces */
-  --color-primary-container:  rgba(124, 92, 252, 0.14);
-  --color-primary-border:     rgba(124, 92, 252, 0.28);
-  --color-on-primary:         #ffffff;
+  /* ── Primary (HCT-derived from #7c5cfc) ─────────────────────────── */
+  --color-primary:            var(--m3-primary-palette-60);  /* #947dff — tone 60, readable on dark */
+  --color-primary-dim:        var(--m3-primary-palette-50);  /* #7a5afa — pressed/hover */
+  --color-primary-bright:     var(--m3-primary-palette-80);  /* #cabeff — max legibility */
+  --color-primary-container:  color-mix(in srgb, var(--m3-primary-palette-30) 16%, transparent);
+  --color-primary-border:     color-mix(in srgb, var(--m3-primary-palette-40) 35%, transparent);
+  --color-on-primary:         var(--m3-on-primary);          /* #32009a — text on primary bg */
+  --color-inverse-primary:    var(--m3-inverse-primary);     /* #613de0 — light-mode inversion */
 
-  /* ── Secondary — Teal/Cyan ───────────────────────────────────────── */
-  --color-secondary:          #2dd4bf;  /* Teal for data/graph connections */
-  --color-secondary-dim:      #14b8a6;
-  --color-secondary-bright:   #5eead4;
-  --color-secondary-container:rgba(45, 212, 191, 0.12);
-  --color-secondary-border:   rgba(45, 212, 191, 0.25);
-  --color-on-secondary:       #001a18;
+  /* ── Secondary — Teal/Cyan (HCT-derived from #2dd4bf) ───────────── */
+  --color-secondary:          var(--m3-secondary);           /* #3cddc7 */
+  --color-secondary-dim:      var(--m3-secondary-container); /* #005047 */
+  --color-secondary-bright:   var(--m3-on-secondary-container); /* #62fae3 */
+  --color-secondary-container:color-mix(in srgb, var(--m3-secondary-container) 20%, transparent);
+  --color-secondary-border:   color-mix(in srgb, var(--m3-secondary) 25%, transparent);
+  --color-on-secondary:       var(--m3-on-secondary);        /* #003731 */
 
-  /* ── Tertiary — Coral/Amber (use sparingly) ──────────────────────── */
-  --color-tertiary:           #fb923c;  /* Warm accent for call-to-actions */
-  --color-tertiary-container: rgba(251, 146, 60, 0.12);
+  /* ── Tertiary — Coral/Amber (HCT-derived from #fb923c) ──────────── */
+  --color-tertiary:           var(--m3-tertiary);            /* #ffb783 */
+  --color-tertiary-container: color-mix(in srgb, var(--m3-tertiary-container) 20%, transparent);
+  --color-on-tertiary:        var(--m3-on-tertiary);
 
-  /* ── Severity — matches Wiz's system but on our surface tones ────── */
-  --color-critical:           #f04545;  /* Red */
-  --color-critical-dim:       #3d1818;  /* Container bg */
-  --color-critical-border:    rgba(240, 69, 69, 0.30);
-  --color-high:               #f97316;  /* Orange */
-  --color-high-dim:           #3d2510;
-  --color-high-border:        rgba(249, 115, 22, 0.30);
-  --color-medium:             #f0c030;  /* Amber */
-  --color-medium-dim:         #33290e;
-  --color-medium-border:      rgba(240, 192, 48, 0.28);
-  --color-low:                #60a5fa;  /* Blue (we use blue, not gray) */
-  --color-low-dim:            #172038;
-  --color-low-border:         rgba(96, 165, 250, 0.28);
-  --color-info:               #a78bfa;  /* Our primary-adjacent */
-  --color-info-dim:           #1e1530;
+  /* ── Severity scale ──────────────────────────────────────────────── */
+  /* Critical — vivid red, HCT-derived from #f04545 */
+  --color-critical:           var(--m3-error);               /* #ffb3ae tone-80 */
+  --color-critical-vivid:     #f04545;                       /* Used for badge fills */
+  --color-critical-dim:       var(--m3-error-container);     /* #930013 */
+  --color-critical-border:    color-mix(in srgb, var(--m3-error) 28%, transparent);
 
-  /* ── Success / Positive trend ────────────────────────────────────── */
+  /* High — orange (no M3 role, HCT-derived independently) */
+  --color-high:               #f97316;
+  --color-high-dim:           rgba(249,115,22, 0.14);
+  --color-high-border:        rgba(249,115,22, 0.28);
+
+  /* Medium — amber */
+  --color-medium:             #f0c030;
+  --color-medium-dim:         rgba(240,192,48, 0.12);
+  --color-medium-border:      rgba(240,192,48, 0.25);
+
+  /* Low — use secondary (teal) for low severity — distinctive from Wiz's gray */
+  --color-low:                var(--m3-secondary);
+  --color-low-dim:            var(--color-secondary-container);
+  --color-low-border:         var(--color-secondary-border);
+
+  /* Info — primary-adjacent */
+  --color-info:               var(--m3-primary-palette-70);
+  --color-info-dim:           var(--color-primary-container);
+
+  /* ── Success ─────────────────────────────────────────────────────── */
   --color-success:            #34d399;
-  --color-success-dim:        #0d2b1e;
-  --color-success-border:     rgba(52, 211, 153, 0.25);
+  --color-success-dim:        rgba(52,211,153, 0.12);
+  --color-success-border:     rgba(52,211,153, 0.25);
 
-  /* ── Surface scale (M3 tonal elevation) ──────────────────────────── */
-  /*   surface-0 = page base     #08080e  */
-  /*   surface-1 = cards         #0f0f1a  (+7 brightness) */
-  /*   surface-2 = raised cards  #141426  (+5) */
-  /*   surface-3 = modals        #1a1a30  (+6) */
-  /*   surface-4 = overlays      #202040  (+6) */
-  /*   surface-5 = tooltips      #26263c  */
-  --surface-0:  #08080e;
-  --surface-1:  #0f0f1a;
-  --surface-2:  #141424;
-  --surface-3:  #1a1a30;
-  --surface-4:  #20203c;
-  --surface-5:  #26263e;
+  /* ── Surface scale (pushed DARKER than M3 default) ──────────────── */
+  /*
+   * M3 neutral-4 = #0f0e11 (closest to our black-violet)
+   * We override surface-0 slightly: pure black + violet undertone
+   * Actual surface containers use the HCT neutral values.
+   */
+  --surface-0:  #09080c;                           /* Page base — our black-violet, darker than M3 */
+  --surface-1:  var(--m3-neutral-palette-10);      /* #1c1b1e — cards */
+  --surface-2:  var(--m3-neutral-palette-12);      /* #201f22 — raised cards */
+  --surface-3:  var(--m3-neutral-palette-17);      /* #2b292d — modals */
+  --surface-4:  var(--m3-neutral-palette-22);      /* #363438 — overlays */
+  --surface-5:  var(--m3-neutral-palette-24);      /* #3a383c — tooltips */
 
-  /* ── Border scale ────────────────────────────────────────────────── */
-  --border-subtle:  rgba(255,255,255,0.06);   /* Table dividers */
-  --border-default: rgba(255,255,255,0.10);   /* Card borders */
-  --border-strong:  rgba(255,255,255,0.18);   /* Focus rings, selected */
+  /* M3 surface container aliases */
+  --surface-container-lowest:  var(--m3-surface-container-lowest);
+  --surface-container-low:     var(--m3-surface-container-low);
+  --surface-container:         var(--m3-surface-container);
+  --surface-container-high:    var(--m3-surface-container-high);
+  --surface-container-highest: var(--m3-surface-container-highest);
 
-  /* Solid equivalents (for box-shadow fallback) */
-  --border-solid:   #1a1a2e;
-  --border-card:    #18182c;
+  /* ── Border / Outline (HCT-derived) ─────────────────────────────── */
+  --border-subtle:  color-mix(in srgb, var(--m3-outline-variant) 40%, transparent);
+  --border-default: color-mix(in srgb, var(--m3-outline-variant) 60%, transparent);
+  --border-strong:  var(--m3-outline);
+  --border-solid:   var(--m3-neutral-palette-20);  /* #313033 */
+  --border-card:    var(--m3-neutral-palette-17);  /* #2b292d */
 
-  /* ── Text scale ──────────────────────────────────────────────────── */
-  --text-primary:   #eaeaf8;   /* Near white, slight violet tint */
-  --text-secondary: #8888b0;   /* Medium — labels, subtitles */
-  --text-tertiary:  #55557a;   /* Dim — metadata, timestamps */
-  --text-disabled:  #35354a;   /* Disabled states */
-  --text-inverse:   #08080e;   /* On light/colored surfaces */
+  /* ── Text (HCT-derived neutral) ─────────────────────────────────── */
+  --text-primary:   var(--m3-on-surface);           /* #e6e1e5 */
+  --text-secondary: var(--m3-on-surface-variant);   /* #cac4cf */
+  --text-tertiary:  var(--m3-outline);              /* #938f99 */
+  --text-disabled:  var(--m3-outline-variant);      /* #48454e */
+  --text-inverse:   var(--m3-inverse-on-surface);   /* #313033 */
 
-  /* ── Interactive state overlays ──────────────────────────────────── */
-  --state-hover:   rgba(124,92,252,0.08);   /* Hover over any row/card */
-  --state-pressed: rgba(124,92,252,0.14);
-  --state-focused: rgba(124,92,252,0.16);
-  --state-selected:rgba(124,92,252,0.18);
+  /* ── State layers (M3 spec percentages) ─────────────────────────── */
+  --state-hover:    color-mix(in srgb, var(--m3-primary-palette-80) 8%,  transparent);
+  --state-pressed:  color-mix(in srgb, var(--m3-primary-palette-80) 12%, transparent);
+  --state-focused:  color-mix(in srgb, var(--m3-primary-palette-80) 12%, transparent);
+  --state-selected: color-mix(in srgb, var(--m3-primary-palette-80) 16%, transparent);
+  --state-dragged:  color-mix(in srgb, var(--m3-primary-palette-80) 16%, transparent);
 
   /* ── Sidebar ─────────────────────────────────────────────────────── */
-  --sidebar-bg:         #08080e;   /* Same as surface-0 */
-  --sidebar-item-hover: rgba(124,92,252,0.10);
-  --sidebar-item-active:#131328;
-  --sidebar-item-active-border: var(--color-primary);
-  --sidebar-icon:       #55557a;
-  --sidebar-icon-active:var(--color-primary-bright);
-  --sidebar-width:      56px;
+  --sidebar-bg:                #09080c;
+  --sidebar-item-hover:        var(--state-hover);
+  --sidebar-item-active:       var(--color-primary-container);
+  --sidebar-item-active-border:var(--color-primary);
+  --sidebar-icon:              var(--text-tertiary);
+  --sidebar-icon-active:       var(--color-primary-bright);
+  --sidebar-width:             56px;
 
   /* ── Top bar ─────────────────────────────────────────────────────── */
-  --topbar-bg:       #0a0a16;
-  --topbar-border:   #13132a;
-  --topbar-height:   52px;
+  --topbar-bg:     var(--surface-0);
+  --topbar-border: var(--border-subtle);
+  --topbar-height: 52px;
 
   /* ── Typography ──────────────────────────────────────────────────── */
-  --font-sans:   'Inter', 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono:   'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  --font-sans:  'Inter', 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
 
   /* M3 type scale */
-  --text-display-lg:   36px;   /* Hero numbers (metrics) */
-  --text-display-md:   28px;
-  --text-headline:     20px;   /* Page titles */
-  --text-title:        16px;   /* Section headers */
-  --text-label-lg:     14px;
-  --text-label-md:     13px;
-  --text-label-sm:     11px;   /* Table headers, badges */
-  --text-body:         14px;
-  --text-body-sm:      13px;
+  --text-display-lg:  36px;   /* Hero metric numbers */
+  --text-display-md:  28px;
+  --text-headline:    20px;   /* Page titles */
+  --text-title:       16px;   /* Section headers */
+  --text-label-lg:    14px;
+  --text-label-md:    13px;
+  --text-label-sm:    11px;   /* ALL CAPS labels, badge text */
+  --text-body:        14px;
+  --text-body-sm:     13px;
 
-  /* ── Radius scale ────────────────────────────────────────────────── */
-  --radius-xs:  4px;
-  --radius-sm:  6px;
-  --radius-md:  10px;   /* Cards */
-  --radius-lg:  14px;   /* Modals, large panels */
-  --radius-xl:  20px;   /* Pill badges */
-  --radius-full:9999px;
+  /* ── Shape / Radius (M3 shape scale) ────────────────────────────── */
+  --radius-none:  0;
+  --radius-xs:    4px;   /* Extra-small */
+  --radius-sm:    8px;   /* Small */
+  --radius-md:    12px;  /* Medium — M3 increased from 10 to 12 in Expressive */
+  --radius-lg:    16px;  /* Large */
+  --radius-xl:    28px;  /* Extra-large */
+  --radius-full:  9999px;
 
-  /* ── Spacing (4px base grid) ─────────────────────────────────────── */
+  /* ── Spacing (4px grid) ──────────────────────────────────────────── */
   --space-1:  4px;
   --space-2:  8px;
   --space-3:  12px;
@@ -146,26 +160,60 @@
   --space-10: 40px;
   --space-12: 48px;
 
-  /* ── Shadows (tinted toward primary) ────────────────────────────── */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
-  --shadow-lg:  0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08);
-  --shadow-glow:0 0 20px rgba(124,92,252,0.20);  /* Primary glow for focused cards */
+  /* ── Elevation (M3 tonal + shadow hybrid) ────────────────────────── */
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px rgba(0,0,0,0.3),  0 1px 3px 1px rgba(0,0,0,0.15);
+  --elevation-2: 0 1px 2px rgba(0,0,0,0.3),  0 2px 6px 2px rgba(0,0,0,0.15);
+  --elevation-3: 0 4px 8px 3px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.3);
+  --elevation-4: 0 6px 10px 4px rgba(0,0,0,0.15), 0 2px 3px rgba(0,0,0,0.3);
+  --elevation-5: 0 8px 12px 6px rgba(0,0,0,0.15), 0 4px 4px rgba(0,0,0,0.3);
 
-  /* ── Transition ──────────────────────────────────────────────────── */
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);   /* M3 standard */
-  --ease-decel:    cubic-bezier(0, 0, 0, 1);       /* M3 decelerate (enter) */
-  --ease-accel:    cubic-bezier(0.3, 0, 1, 1);     /* M3 accelerate (exit) */
-  --duration-short: 150ms;
-  --duration-medium:250ms;
-  --duration-long:  400ms;
+  /* Expressive glow — our addition, not in M3 spec but on-brand */
+  --glow-primary:   0 0 20px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  --glow-secondary: 0 0 16px color-mix(in srgb, var(--color-secondary) 25%, transparent);
+  --glow-critical:  0 0 16px color-mix(in srgb, var(--color-critical-vivid) 25%, transparent);
 
-  /* ── Z-index scale ───────────────────────────────────────────────── */
-  --z-base:    0;
-  --z-raised:  10;
-  --z-dropdown:100;
-  --z-sticky:  200;
-  --z-overlay: 500;
-  --z-modal:   1000;
-  --z-toast:   2000;
+  /* ── Motion (M3 Expressive spring-based) ────────────────────────── */
+  /* Standard easing */
+  --ease-standard:        cubic-bezier(0.2, 0, 0, 1);
+  --ease-standard-decel:  cubic-bezier(0, 0, 0, 1);     /* Enter: slow at end */
+  --ease-standard-accel:  cubic-bezier(0.3, 0, 1, 1);   /* Exit: fast at start */
+  /* Emphasized (M3 Expressive) */
+  --ease-emphasized:       cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized-decel: cubic-bezier(0.05, 0.7, 0.1, 1.0);  /* Expressive enter */
+  --ease-emphasized-accel: cubic-bezier(0.3, 0, 0.8, 0.15);    /* Expressive exit */
+  /* Spring approximation (no native CSS springs — closest available) */
+  --ease-spring:           cubic-bezier(0.34, 1.56, 0.64, 1);  /* Overshoot bounce */
+  --ease-spring-tight:     cubic-bezier(0.25, 1.2, 0.5, 1);    /* Tight spring */
+
+  /* Durations */
+  --duration-short1:   50ms;
+  --duration-short2:  100ms;
+  --duration-short3:  150ms;
+  --duration-short4:  200ms;
+  --duration-medium1: 250ms;
+  --duration-medium2: 300ms;
+  --duration-medium3: 350ms;
+  --duration-medium4: 400ms;
+  --duration-long1:   450ms;
+  --duration-long2:   500ms;
+  --duration-long3:   550ms;
+  --duration-long4:   600ms;
+  --duration-extra:   700ms;
+
+  /* Semantic duration aliases */
+  --duration-micro:   var(--duration-short3);   /* 150ms — micro-interactions */
+  --duration-fast:    var(--duration-medium1);  /* 250ms — standard transitions */
+  --duration-normal:  var(--duration-medium3);  /* 350ms — page elements */
+  --duration-slow:    var(--duration-long2);    /* 500ms — complex animations */
+
+  /* ── Z-index ─────────────────────────────────────────────────────── */
+  --z-base:      0;
+  --z-raised:    10;
+  --z-sticky:    100;
+  --z-dropdown:  200;
+  --z-overlay:   500;
+  --z-modal:     800;
+  --z-toast:     1200;
+  --z-tooltip:   1500;
 }
