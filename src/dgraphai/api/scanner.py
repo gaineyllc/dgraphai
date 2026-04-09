@@ -258,13 +258,19 @@ async def sync_delta(
 # ── Heartbeat ──────────────────────────────────────────────────────────────────
 
 class HeartbeatPayload(BaseModel):
-    version:     str
-    platform:    str
-    uptime_secs: int
+    version:       str
+    platform:      str
+    uptime_secs:   int
     files_indexed: int
-    errors:      int
-    connectors:  int
-    scanning:    bool
+    errors:        int
+    connectors:    int
+    scanning:      bool
+    # Network topology for source routing
+    region:          str = "unknown"       # e.g. 'us-east-1', 'eu-west-1', 'on-prem'
+    datacenter:      str = "unknown"       # human-readable location
+    latency_matrix:  dict[str, float] = {} # {region: avg_rtt_ms}
+    bandwidth_mbps:  float = 100.0         # measured upload bandwidth
+    indexed_connectors: list[str] = []     # connector IDs indexed by this agent
 
 
 @router.post("/heartbeat")
@@ -279,6 +285,20 @@ async def heartbeat(
     """
     scanner.version     = payload.version
     scanner.platform    = payload.platform
+
+    # Update routing topology
+    from src.dgraphai.streaming.router import AgentTopology, get_stream_router
+    topo = AgentTopology(
+        agent_id            = str(scanner.id),
+        region              = payload.region,
+        datacenter          = payload.datacenter,
+        latency_matrix      = payload.latency_matrix,
+        bandwidth_mbps      = payload.bandwidth_mbps,
+        is_online           = True,
+        indexed_connectors  = payload.indexed_connectors,
+    )
+    get_stream_router().register_agent(topo)
+
     scanner.last_health = {
         "uptime_secs":   payload.uptime_secs,
         "files_indexed": payload.files_indexed,
