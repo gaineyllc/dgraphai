@@ -13,7 +13,7 @@ const token = () => localStorage.getItem('dgraphai_token') || ''
 
 const api = {
   list: (action: string, offset: number, limit: number) =>
-    fetch(`/api/audit?action=${encodeURIComponent(action)}&offset=${offset}&limit=${limit}`, {
+    apiFetch(`/api/audit?action=${encodeURIComponent(action)}&offset=${offset}&limit=${limit}`, {
       headers: { Authorization: `Bearer ${token()}` },
     }).then(r => r.json()),
 }
@@ -184,3 +184,6 @@ export function AuditLogPage() {
     </div>
   )
 }
+
+
+

@@ -23,14 +23,14 @@ import './ConnectorsPage.css'
 // ── API calls ─────────────────────────────────────────────────────────────────
 
 const api = {
-  getTypes: ()      => fetch('/api/connectors/types').then(r => r.json()),
-  list:     ()      => fetch('/api/connectors').then(r => r.json()),
-  create:   (body)  => fetch('/api/connectors', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) }).then(r => r.json()),
-  update:   (id, b) => fetch(`/api/connectors/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(b) }).then(r => r.json()),
-  delete:   (id)    => fetch(`/api/connectors/${id}`, { method: 'DELETE' }).then(r => r.json()),
-  test:     (id)    => fetch(`/api/connectors/${id}/test`, { method: 'POST' }).then(r => r.json()),
-  agents:   (id)    => fetch(`/api/connectors/${id}/agents`).then(r => r.json()),
-  getAgents:()      => fetch('/api/scanner/register').catch(() => ({ json: () => [] })),
+  getTypes: ()      => apiFetch('/api/connectors/types').then(r => r.json()),
+  list:     ()      => apiFetch('/api/connectors').then(r => r.json()),
+  create:   (body)  => apiFetch('/api/connectors', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) }).then(r => r.json()),
+  update:   (id, b) => apiFetch(`/api/connectors/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(b) }).then(r => r.json()),
+  delete:   (id)    => apiFetch(`/api/connectors/${id}`, { method: 'DELETE' }).then(r => r.json()),
+  test:     (id)    => apiFetch(`/api/connectors/${id}/test`, { method: 'POST' }).then(r => r.json()),
+  agents:   (id)    => apiFetch(`/api/connectors/${id}/agents`).then(r => r.json()),
+  getAgents:()      => apiFetch('/api/scanner/register').catch(() => ({ json: () => [] })),
 }
 
 // ── Type metadata ─────────────────────────────────────────────────────────────
@@ -295,7 +295,7 @@ function ConnectorModal({ types, initial, onClose, onSave }) {
 
   const { data: scannerAgents = [] } = useQuery({
     queryKey: ['scanner-agents-list'],
-    queryFn:  () => fetch('/api/connectors/00000000-0000-0000-0000-000000000000/agents').then(r => r.ok ? r.json() : []),
+    queryFn:  () => apiFetch('/api/connectors/00000000-0000-0000-0000-000000000000/agents').then(r => r.ok ? r.json() : []),
   })
 
   const typeInfo = types.find(t => t.id === selectedType)
@@ -308,7 +308,7 @@ function ConnectorModal({ types, initial, onClose, onSave }) {
     setTesting(true); setTestResult(null)
     try {
       const cls = { connector_type: selectedType, config }
-      const r = await fetch('/api/connectors/test', {
+      const r = await apiFetch('/api/connectors/test', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cls),
       })
@@ -551,3 +551,6 @@ function relTime(iso: string) {
   if (h < 24) return `${h}h ago`
   return `${Math.floor(h/24)}d ago`
 }
+
+
+

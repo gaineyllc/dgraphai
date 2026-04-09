@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/apiFetch'
 /**
  * InspectionPane — full node detail panel on the right side.
  *
@@ -234,7 +235,7 @@ function RelationshipsTab({ nodeId }: { nodeId: string }) {
   const [data, setData] = useState<{ nodes: unknown[]; edges: unknown[] } | null>(null)
 
   useEffect(() => {
-    fetch(`/api/graph/node/${encodeURIComponent(nodeId)}/neighbors?depth=1&limit=50`)
+    apiFetch(`/api/graph/node/${encodeURIComponent(nodeId)}/neighbors?depth=1&limit=50`)
       .then(r => r.json())
       .then(setData)
       .catch(() => {})
@@ -347,3 +348,4 @@ function FieldValue({ field, value }: { field: string; value: unknown }) {
   const s = String(value)
   return <span title={s.length > 60 ? s : undefined}>{s.length > 60 ? s.slice(0, 60) + '…' : s}</span>
 }
+

@@ -10,11 +10,11 @@ import { ShieldCheck, Copy, AlertCircle, CheckCircle2, Loader2 } from 'lucide-re
 import './Auth.css'
 
 const api = {
-  enroll: () => fetch('/api/auth/mfa/enroll', {
+  enroll: () => apiFetch('/api/auth/mfa/enroll', {
     method: 'POST',
     headers: { Authorization: `Bearer ${localStorage.getItem('dgraphai_token')}` },
   }).then(r => r.json()),
-  verify: (code: string) => fetch('/api/auth/mfa/verify-enrollment', {
+  verify: (code: string) => apiFetch('/api/auth/mfa/verify-enrollment', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('dgraphai_token')}` },
     body:    JSON.stringify({ code }),
@@ -155,3 +155,5 @@ export function MFASetupPage({ onDone }: { onDone?: () => void }) {
     </motion.div>
   )
 }
+
+

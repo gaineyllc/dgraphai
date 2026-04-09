@@ -29,7 +29,7 @@ import (
 	"github.com/gaineyllc/dgraphai/agent/internal/config"
 	"github.com/gaineyllc/dgraphai/agent/internal/connector"
 	"github.com/gaineyllc/dgraphai/agent/internal/enricher"
-	"github.com/gaineyllc/dgraphai/agent/internal/sync"
+	agentsync "github.com/gaineyllc/dgraphai/agent/internal/sync"
 )
 
 // Build-time variables injected by goreleaser
@@ -92,12 +92,13 @@ func run(cmd *cobra.Command, args []string) error {
 	// Start health server (loopback only)
 	go startHealthServer(cfg.HealthBind, log)
 
-	// Build components
-	enrich := enricher.New(cfg.EnableSecretScan, cfg.EnablePIIScan)
-	client := sync.New(cfg.APIEndpoint, cfg.APIKey, cfg.TenantID, cfg.AgentID, log, nil)
+	// Build components — use Rust subprocess enricher if available,
+	// fall back to pure Go enricher
+	subEnrich := enricher.NewSubprocessEnricher("", cfg.EnableSecretScan, cfg.EnablePIIScan)
+	client := agentsync.New(cfg.APIEndpoint, cfg.APIKey, cfg.TenantID, cfg.AgentID, log, nil)
 
 	// Announce agent registration
-	if err := client.Heartbeat(ctx, buildHealthReport(cfg)); err != nil {
+	if err := client.Heartbeat(ctx, buildHealthReport(cfg, subEnrich)); err != nil {
 		log.Warn("Initial heartbeat failed", zap.Error(err))
 	}
 
@@ -105,7 +106,7 @@ func run(cmd *cobra.Command, args []string) error {
 	ticker := time.NewTicker(cfg.SyncInterval)
 	defer ticker.Stop()
 
-	runAllScans(ctx, cfg, client, enrich, log)
+	runAllScans(ctx, cfg, client, subEnrich, log)
 
 	for {
 		select {
@@ -113,12 +114,12 @@ func run(cmd *cobra.Command, args []string) error {
 			log.Info("Shutting down gracefully")
 			return nil
 		case <-ticker.C:
-			runAllScans(ctx, cfg, client, enrich, log)
+			runAllScans(ctx, cfg, client, subEnrich, log)
 		}
 	}
 }
 
-func runAllScans(ctx context.Context, cfg *config.Config, client *sync.Client, enrich *enricher.Enricher, log *zap.Logger) {
+func runAllScans(ctx context.Context, cfg *config.Config, client *agentsync.Client, enrich *enricher.SubprocessEnricher, log *zap.Logger) {
 	for _, connCfg := range cfg.Connectors {
 		if !connCfg.Enabled {
 			continue
@@ -169,13 +170,15 @@ func startHealthServer(bind string, log *zap.Logger) {
 	}
 }
 
-func buildHealthReport(cfg *config.Config) map[string]any {
+func buildHealthReport(cfg *config.Config, enrich *enricher.SubprocessEnricher) map[string]any {
+	_, enricherAvail := os.Stat(enrich.BinaryPath())
 	return map[string]any{
-		"version":    version,
-		"os":         runtime.GOOS,
-		"arch":       runtime.GOARCH,
-		"connectors": len(cfg.Connectors),
-		"air_gapped": cfg.AirGapped,
+		"version":           version,
+		"os":                runtime.GOOS,
+		"arch":              runtime.GOARCH,
+		"connectors":        len(cfg.Connectors),
+		"air_gapped":        cfg.AirGapped,
+		"enricher_available": enricherAvail == nil,
 	}
 }
 

@@ -30,7 +30,7 @@ export function EmailVerificationBanner() {
 
   const resend = async () => {
     setSending(true)
-    await fetch('/api/auth/resend-verification', {
+    await apiFetch('/api/auth/resend-verification', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -61,3 +61,5 @@ export function EmailVerificationBanner() {
     </div>
   )
 }
+
+

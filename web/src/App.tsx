@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Sidebar } from './components/Sidebar'
 import { GraphPage } from './pages/GraphPage'
@@ -17,6 +17,7 @@ import { LoginPage }          from './pages/auth/LoginPage'
 import { SignupPage }         from './pages/auth/SignupPage'
 import { ForgotPasswordPage }  from './pages/auth/ForgotPasswordPage'
 import { ResetPasswordPage }   from './pages/auth/ResetPasswordPage'
+import { AcceptInvitePage }    from './pages/auth/AcceptInvitePage'
 import { SettingsPage }        from './pages/SettingsPage'
 import { AuditLogPage }       from './pages/AuditLogPage'
 import { useQuery } from '@tanstack/react-query'
@@ -29,16 +30,15 @@ const queryClient = new QueryClient({
   },
 })
 
+const AUTH_ONLY_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/accept-invite']
+
 function AppShell() {
-  const { data: stats } = useQuery({
-    queryKey: ['graph-stats'],
-    queryFn: graphApi.stats,
-    refetchInterval: 30_000,
-  })
+  const location = useLocation()
+  const isAuthPage = AUTH_ONLY_PATHS.some(p => location.pathname.startsWith(p))
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      {!isAuthPage && <Sidebar />}
       <main className="flex-1 flex flex-col overflow-hidden">
         <Routes>
           <Route path="/"         element={<GraphPage />} />
@@ -51,6 +51,7 @@ function AppShell() {
           <Route path="/signup"    element={<SignupPage />} />
           <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
           <Route path="/reset-password"   element={<ResetPasswordPage />} />
+          <Route path="/accept-invite"    element={<AcceptInvitePage />} />
           <Route path="/settings"         element={<SettingsPage />} />
           <Route path="/audit"            element={<AuditLogPage />} />
           <Route path="/query"    element={<QueryWorkspace />} />

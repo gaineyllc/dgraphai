@@ -21,7 +21,7 @@ const TYPE_ICONS: Record<string, any> = {
 
 const api = {
   search: (q: string, limit = 20) =>
-    fetch(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}`, {
+    apiFetch(`/api/search?q=${encodeURIComponent(q)}&limit=${limit}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('dgraphai_token')}` },
     }).then(r => r.json()),
 }
@@ -180,3 +180,6 @@ export function GlobalSearch() {
     </>
   )
 }
+
+
+

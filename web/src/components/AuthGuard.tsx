@@ -36,7 +36,7 @@ export function AuthGuard({ children }: Props) {
 
   const checkFirstRun = async () => {
     try {
-      const r = await fetch('/api/connectors', {
+      const r = await apiFetch('/api/connectors', {
         headers: { Authorization: `Bearer ${localStorage.getItem('dgraphai_token')}` },
       })
       const connectors = await r.json()
@@ -66,3 +66,5 @@ export function AuthGuard({ children }: Props) {
     </>
   )
 }
+
+

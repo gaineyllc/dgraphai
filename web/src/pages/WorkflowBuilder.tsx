@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { apiFetch } from '../lib/apiFetch'
 /**
  * WorkflowBuilder — visual drag-and-drop workflow canvas.
  *
@@ -251,7 +252,7 @@ export function WorkflowBuilder() {
       position_y: n.position.y,
     }))
     try {
-      await fetch('/api/workflows/templates', {
+      await apiFetch('/api/workflows/templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: workflowName, steps, trigger_type: 'manual' }),
@@ -598,3 +599,5 @@ export default function WorkflowBuilderPage() {
     </ReactFlowProvider>
   )
 }
+
+

@@ -24,7 +24,7 @@ const api = {
   invite:       (b)    => fetch('/api/users/invite',   { method: 'POST',  headers: authHeaders(), body: JSON.stringify(b) }).then(r => r.json()),
   removeUser:   (id)   => fetch(`/api/users/${id}`,    { method: 'DELETE',headers: authHeaders() }).then(r => r.json()),
   billing:      ()     => fetch('/api/settings/billing',{ headers: authHeaders() }).then(r => r.json()),
-  checkout:     (plan) => fetch('/api/settings/billing/checkout', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ plan }) }).then(r => r.json()),
+  checkout:     (plan) => fetch('/api/settings/billing/checkout', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ plan }) }),
   notifs:       ()     => fetch('/api/settings/notifications', { headers: authHeaders() }).then(r => r.json()),
   updateNotifs: (b)    => fetch('/api/settings/notifications', { method: 'PATCH', headers: authHeaders(), body: JSON.stringify(b) }).then(r => r.json()),
   apiKeys:      ()     => fetch('/api/auth/api-keys',  { headers: authHeaders() }).then(r => r.json()),
@@ -398,10 +398,20 @@ function BillingTab() {
 
   const upgrade = async (plan: string) => {
     setUpgrading(plan)
-    const d = await api.checkout(plan)
-    if (d.checkout_url) window.location.href = d.checkout_url
-    if (d.redirect_url) window.location.href = d.redirect_url
-    setUpgrading('')
+    try {
+      const r = await api.checkout(plan)
+      const d = await r.json()
+      if (!r.ok) {
+        alert(d.detail || 'Billing error — please try again')
+        return
+      }
+      if (d.checkout_url) window.location.href = d.checkout_url
+      else if (d.redirect_url) window.location.href = d.redirect_url
+    } catch (e) {
+      alert('Network error — please try again')
+    } finally {
+      setUpgrading('')
+    }
   }
 
   const PLANS = [

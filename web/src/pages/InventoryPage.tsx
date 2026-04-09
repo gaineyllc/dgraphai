@@ -25,17 +25,17 @@ import './InventoryPage.css'
 // ── API ────────────────────────────────────────────────────────────────────────
 
 const api = {
-  list:       ()                              => fetch('/api/inventory').then(r => r.json()),
+  list:       ()                              => apiFetch('/api/inventory').then(r => r.json()),
   detail:     (id: string, page: number, ps = 25) =>
-    fetch(`/api/inventory/${id}?page=${page}&page_size=${ps}`).then(r => r.json()),
-  filterAttrs:(id: string)                  => fetch(`/api/inventory/${id}/filterable-attributes`).then(r => r.json()),
+    apiFetch(`/api/inventory/${id}?page=${page}&page_size=${ps}`).then(r => r.json()),
+  filterAttrs:(id: string)                  => apiFetch(`/api/inventory/${id}/filterable-attributes`).then(r => r.json()),
   filtered:   (id: string, filters: any[], page: number, ps = 25) =>
-    fetch(`/api/inventory/${id}/filtered?page=${page}&page_size=${ps}`, {
+    apiFetch(`/api/inventory/${id}/filtered?page=${page}&page_size=${ps}`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ filters }),
     }).then(r => r.json()),
-  search:     (q: string)                   => fetch(`/api/inventory/search?q=${encodeURIComponent(q)}`).then(r => r.json()),
-  suggest:    (q: string)                   => fetch(`/api/inventory/search/suggest?q=${encodeURIComponent(q)}&limit=8`).then(r => r.json()),
+  search:     (q: string)                   => apiFetch(`/api/inventory/search?q=${encodeURIComponent(q)}`).then(r => r.json()),
+  suggest:    (q: string)                   => apiFetch(`/api/inventory/search/suggest?q=${encodeURIComponent(q)}&limit=8`).then(r => r.json()),
 }
 
 // ── Entry point ────────────────────────────────────────────────────────────────
@@ -648,3 +648,6 @@ function fmtSize(b) {
   if (b >= 1e3) return `${(b/1e3).toFixed(0)} KB`
   return `${b} B`
 }
+
+
+

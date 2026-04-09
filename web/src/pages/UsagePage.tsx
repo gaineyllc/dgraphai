@@ -14,10 +14,10 @@ import {
 import './UsagePage.css'
 
 const api = {
-  snapshot: () => fetch('/api/usage/snapshot').then(r => r.json()),
-  plans:    () => fetch('/api/usage/plans').then(r => r.json()),
-  rates:    () => fetch('/api/usage/rates').then(r => r.json()),
-  limits:   () => fetch('/api/usage/limits').then(r => r.json()),
+  snapshot: () => apiFetch('/api/usage/snapshot').then(r => r.json()),
+  plans:    () => apiFetch('/api/usage/plans').then(r => r.json()),
+  rates:    () => apiFetch('/api/usage/rates').then(r => r.json()),
+  limits:   () => apiFetch('/api/usage/limits').then(r => r.json()),
 }
 
 const TIER_META = {
@@ -323,3 +323,6 @@ function fmt(n: number) {
   if (n >= 1_000)     return `${(n/1_000).toFixed(1)}K`
   return n.toLocaleString()
 }
+
+
+

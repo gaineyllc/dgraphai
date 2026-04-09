@@ -24,11 +24,11 @@ import {
 
 const api = {
   detail:     (id, page, ps = 25) =>
-    fetch(`/api/inventory/${id}?page=${page}&page_size=${ps}`).then(r => r.json()),
+    apiFetch(`/api/inventory/${id}?page=${page}&page_size=${ps}`).then(r => r.json()),
   filterAttrs:(id) =>
-    fetch(`/api/inventory/${id}/filterable-attributes`).then(r => r.json()),
+    apiFetch(`/api/inventory/${id}/filterable-attributes`).then(r => r.json()),
   filtered:   (id, filters, page, ps = 25) =>
-    fetch(`/api/inventory/${id}/filtered?page=${page}&page_size=${ps}`, {
+    apiFetch(`/api/inventory/${id}/filtered?page=${page}&page_size=${ps}`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ filters }),
     }).then(r => r.json()),
@@ -523,3 +523,6 @@ function fmtSize(b: number) {
   if (b >= 1e3) return `${(b/1e3).toFixed(0)} KB`
   return `${b} B`
 }
+
+
+

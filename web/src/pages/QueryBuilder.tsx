@@ -168,12 +168,12 @@ function decodeState(encoded: string): BuilderState {
 function useGraphSchema() {
   const { data: schema } = useQuery({
     queryKey: ['graph-schema'],
-    queryFn:  () => fetch('/api/schema').then(r => r.json()),
+    queryFn:  () => apiFetch('/api/schema').then(r => r.json()),
     staleTime: 5 * 60_000,
   })
   const { data: stats } = useQuery({
     queryKey: ['graph-schema-stats'],
-    queryFn:  () => fetch('/api/schema/stats').then(r => r.json()),
+    queryFn:  () => apiFetch('/api/schema/stats').then(r => r.json()),
     staleTime: 60_000,
   })
   const nodeTypes      = schema?.node_types      ?? FALLBACK_NODE_TYPES
@@ -299,7 +299,7 @@ export function QueryBuilder() {
     if (!cypher.trim()) return
     setRunning(true); setError(''); setResults(null)
     try {
-      const r = await fetch('/api/graph/query', {
+      const r = await apiFetch('/api/graph/query', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ cypher, params: {} }),
@@ -549,7 +549,7 @@ function NodeClauseCard({ node, onAliasChange, onAddFilter, onUpdateFilter, onRe
   const nt = nodeTypes.find(t => t.id === node.type)
   const { data: propData } = useQuery({
     queryKey: ['schema-props', node.type],
-    queryFn:  () => fetch(`/api/schema/properties/${node.type}?live=true`).then(r => r.json()),
+    queryFn:  () => apiFetch(`/api/schema/properties/${node.type}?live=true`).then(r => r.json()),
     staleTime: 5 * 60_000,
   })
   const fields = (propData?.properties ?? []).map(p => p.key)
@@ -647,5 +647,8 @@ function fmtCount(n: number) {
   if (n >= 1_000)     return `${(n/1_000).toFixed(0)}K`
   return String(n)
 }
+
+
+
 
 

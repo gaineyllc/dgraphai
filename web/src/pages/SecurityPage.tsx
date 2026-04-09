@@ -305,3 +305,5 @@ function SeverityBadge({ severity }) {
   }[severity] ?? { label: severity, cls: '' }
   return <span className={`sp-sev-badge ${config.cls}`}>{config.label}</span>
 }
+
+

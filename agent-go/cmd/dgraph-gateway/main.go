@@ -36,6 +36,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 )
 
 var (
@@ -233,25 +234,63 @@ type inMemoryLimiter struct{}
 func (l *inMemoryLimiter) Allow(ip, path string) bool { return true } // fallback
 
 type redisLimiterImpl struct {
-	url string
-	// redis.Client would be here in full implementation
+	client *redis.Client
 }
 
 func newRedisLimiter(url string) rateLimiter {
 	if url == "" {
 		return &inMemoryLimiter{}
 	}
-	return &redisLimiterImpl{url: url}
+	opts, err := redis.ParseURL(url)
+	if err != nil {
+		log.Printf("invalid Redis URL %q, falling back to in-memory: %v", url, err)
+		return &inMemoryLimiter{}
+	}
+	client := redis.NewClient(opts)
+	// Test connectivity at startup
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := client.Ping(ctx).Err(); err != nil {
+		log.Printf("Redis unavailable (%v), falling back to in-memory rate limiter", err)
+		return &inMemoryLimiter{}
+	}
+	log.Printf("Redis rate limiter connected to %s", url)
+	return &redisLimiterImpl{client: client}
 }
 
 func (l *redisLimiterImpl) Allow(ip, path string) bool {
-	// Full implementation: sliding window in Redis
-	// ZADD rl:{ip}:{path} {now} {now}
-	// ZREMRANGEBYSCORE rl:{ip}:{path} 0 {now-window}
-	// ZCARD rl:{ip}:{path} → compare to limit
-	// EXPIRE rl:{ip}:{path} {window*2}
-	// For now: always allow (Redis client import pending)
-	return true
+	// Sliding window algorithm using sorted set:
+	//   key:   rl:{ip}:{path}
+	//   score: unix timestamp of request
+	//   member: unique (timestamp as string)
+	max, window := getLimit(path)
+	now := time.Now()
+	cutoff := now.Add(-time.Duration(window) * time.Second).UnixMicro()
+	key := fmt.Sprintf("rl:%s:%s", ip, path)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	// Atomic pipeline
+	pipe := l.client.Pipeline()
+	pipe.ZRemRangeByScore(ctx, key, "0", strconv.FormatInt(cutoff, 10))
+	countCmd := pipe.ZCard(ctx, key)
+	pipe.ZAdd(ctx, key, redis.Z{Score: float64(now.UnixMicro()), Member: now.UnixNano()})
+	pipe.Expire(ctx, key, time.Duration(window*2)*time.Second)
+	if _, err := pipe.Exec(ctx); err != nil {
+		// Redis error — fail open
+		return true
+	}
+	return countCmd.Val() < int64(max)
+}
+
+func getLimit(path string) (int, int) {
+	for prefix, lim := range rateLimits {
+		if strings.HasPrefix(path, prefix) {
+			return lim[0], lim[1]
+		}
+	}
+	return defaultRateLimit, defaultRateWindow
 }
 
 // ── Route classification ──────────────────────────────────────────────────────
