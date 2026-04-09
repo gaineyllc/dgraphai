@@ -20,6 +20,7 @@ from src.dgraphai.api.auth    import router as auth_router
 from src.dgraphai.api.scanner   import router as scanner_router
 from src.dgraphai.api.queries   import router as queries_router
 from src.dgraphai.api.workflows import router as workflows_router
+from src.dgraphai.api.license   import router as license_router
 from src.dgraphai.db.session    import create_tables
 from src.dgraphai.core.config import API_HOST, API_PORT
 
@@ -63,6 +64,7 @@ app.include_router(graph_router)
 app.include_router(scanner_router)
 app.include_router(queries_router)
 app.include_router(workflows_router)
+app.include_router(license_router)
 app.include_router(mounts_router)
 app.include_router(indexer_router)
 app.include_router(actions_router)
