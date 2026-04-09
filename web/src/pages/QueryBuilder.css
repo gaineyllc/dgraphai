@@ -52,6 +52,11 @@
   color: #e2e2f0;
 }
 .qb-palette-item:hover .qb-palette-plus { opacity: 1; }
+.qb-palette-count {
+  margin-left: auto; font-size: 10px; font-variant-numeric: tabular-nums;
+  color: #35354a; font-weight: 600; background: #0a0a0f;
+  padding: 1px 5px; border-radius: 8px;
+}
 .qb-palette-plus { margin-left: auto; opacity: 0; transition: opacity .12s; }
 .qb-palette-rel {
   display: flex; align-items: center; gap: 5px;

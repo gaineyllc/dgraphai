@@ -22,45 +22,48 @@ import {
 } from 'lucide-react'
 import './QueryBuilder.css'
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Constants (static fallbacks — overridden by live schema API) ──────────────
 
-const NODE_TYPES = [
-  { id: 'File',       label: 'File',        icon: '📄', color: '#4f8ef7' },
-  { id: 'Directory',  label: 'Directory',   icon: '📁', color: '#fbbf24' },
-  { id: 'Person',     label: 'Person',      icon: '👤', color: '#f472b6' },
-  { id: 'Application', label: 'Application', icon: '⚙️', color: '#8b5cf6' },
-  { id: 'Location',   label: 'Location',    icon: '📍', color: '#34d399' },
+const FALLBACK_NODE_TYPES = [
+  { id: 'File',          label: 'File',          icon: '📄', color: '#4f8ef7' },
+  { id: 'Directory',     label: 'Directory',     icon: '📁', color: '#fbbf24' },
+  { id: 'Person',        label: 'Person',        icon: '👤', color: '#f472b6' },
+  { id: 'FaceCluster',   label: 'Face Cluster',  icon: '👥', color: '#ec4899' },
+  { id: 'Application',   label: 'Application',   icon: '🖥️', color: '#8b5cf6' },
+  { id: 'Location',      label: 'Location',      icon: '📍', color: '#34d399' },
+  { id: 'Organization',  label: 'Organization',  icon: '🏢', color: '#fb923c' },
+  { id: 'Topic',         label: 'Topic',         icon: '🏷️', color: '#a3e635' },
   { id: 'Vulnerability', label: 'Vulnerability', icon: '🛡️', color: '#f87171' },
-  { id: 'FaceCluster', label: 'Face Cluster', icon: '👥', color: '#ec4899' },
-  { id: 'Connector',  label: 'Connector',   icon: '🔌', color: '#6366f1' },
+  { id: 'MediaItem',     label: 'Media Item',    icon: '🎞️', color: '#818cf8' },
+  { id: 'Certificate',   label: 'Certificate',   icon: '🏅', color: '#4ade80' },
+  { id: 'Dependency',    label: 'Dependency',    icon: '🧩', color: '#67e8f9' },
+  { id: 'License',       label: 'License',       icon: '📜', color: '#6ee7b7' },
+  { id: 'Vendor',        label: 'Vendor',        icon: '🏭', color: '#a78bfa' },
+  { id: 'Collection',    label: 'Collection',    icon: '📚', color: '#f59e0b' },
+  { id: 'Event',         label: 'Event',         icon: '🎉', color: '#fb923c' },
 ]
 
-const RELATIONSHIP_TYPES = [
-  'LOCATED_IN', 'CONTAINS', 'BELONGS_TO',
-  'HAS_VULNERABILITY', 'IDENTIFIED_IN', 'CONNECTED_TO',
+const FALLBACK_RELS = [
+  'CHILD_OF','DUPLICATE_OF','SIMILAR_TO','PART_OF','REFERENCES',
+  'MENTIONS','TAGGED_WITH','LOCATED_AT','OCCURRED_DURING',
+  'DEPICTS','CONTAINS_FACE','MATCHED_TO',
+  'IS_APPLICATION','IS_BINARY','MADE_BY','IS_VERSION_OF','DEPENDS_ON',
+  'LICENSED_UNDER','HAS_VULNERABILITY','SIGNED_BY',
+  'WITHIN','SAME_PERSON_AS',
 ]
 
 const FILTER_OPS = [
-  { op: '=',        label: '='    },
-  { op: '<>',       label: '≠'    },
-  { op: '>',        label: '>'    },
-  { op: '<',        label: '<'    },
-  { op: 'CONTAINS', label: 'contains' },
+  { op: '=',           label: '='           },
+  { op: '<>',          label: '≠'           },
+  { op: '>',           label: '>'           },
+  { op: '<',           label: '<'           },
+  { op: '>=',          label: '>='          },
+  { op: '<=',          label: '<='          },
+  { op: 'CONTAINS',    label: 'contains'    },
   { op: 'STARTS WITH', label: 'starts with' },
-  { op: 'IS NULL',  label: 'is null'  },
-  { op: 'IS NOT NULL', label: 'is set' },
+  { op: 'IS NULL',     label: 'is not set'  },
+  { op: 'IS NOT NULL', label: 'is set'      },
 ]
-
-const COMMON_FIELDS: Record<string, string[]> = {
-  File:        ['name', 'path', 'size', 'file_category', 'mime_type', 'pii_detected', 'sha256', 'sensitivity_level', 'contains_secrets', 'eol_status'],
-  Directory:   ['name', 'path', 'depth'],
-  Person:      ['name', 'known', 'face_count'],
-  Application: ['name', 'version', 'signed', 'eol_status', 'is_packed'],
-  Location:    ['name', 'path', 'connector_type'],
-  Vulnerability: ['cve_id', 'severity', 'cvss_score'],
-  FaceCluster: ['face_count', 'identity'],
-  Connector:   ['name', 'connector_type', 'is_active'],
-}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -160,6 +163,25 @@ function decodeState(encoded: string): BuilderState {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
+// ── Live schema hook ───────────────────────────────────────────────────────────────
+
+function useGraphSchema() {
+  const { data: schema } = useQuery({
+    queryKey: ['graph-schema'],
+    queryFn:  () => fetch('/api/schema').then(r => r.json()),
+    staleTime: 5 * 60_000,
+  })
+  const { data: stats } = useQuery({
+    queryKey: ['graph-schema-stats'],
+    queryFn:  () => fetch('/api/schema/stats').then(r => r.json()),
+    staleTime: 60_000,
+  })
+  const nodeTypes      = schema?.node_types      ?? FALLBACK_NODE_TYPES
+  const relTypes       = schema?.relationship_types?.map(r => r.id) ?? FALLBACK_RELS
+  const relTypeFull    = schema?.relationship_types ?? []
+  return { nodeTypes, relTypes, relTypeFull, stats: stats ?? {} }
+}
+
 export function QueryBuilder() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -181,6 +203,7 @@ export function QueryBuilder() {
   const nodeIdRef = useRef(0)
   const relIdRef  = useRef(0)
   const filterIdRef = useRef(0)
+  const { nodeTypes, relTypes, relTypeFull, stats } = useGraphSchema()
 
   // Update URL whenever state changes
   const setState = useCallback((updater: any) => {
@@ -355,15 +378,19 @@ export function QueryBuilder() {
         {/* Left: node type palette */}
         <div className="qb-palette">
           <div className="qb-palette-title">Node types</div>
-          {NODE_TYPES.map(nt => (
+          {nodeTypes.map(nt => (
             <button
               key={nt.id}
               className="qb-palette-item"
               style={{ '--nc': nt.color } as any}
               onClick={() => addNode(nt.id)}
+              title={nt.description ?? nt.label}
             >
               <span>{nt.icon}</span>
               <span>{nt.label}</span>
+              {stats[nt.id] != null && (
+                <span className="qb-palette-count">{fmtCount(stats[nt.id])}</span>
+              )}
               <Plus size={10} className="qb-palette-plus" />
             </button>
           ))}
@@ -518,8 +545,14 @@ export function QueryBuilder() {
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function NodeClauseCard({ node, onAliasChange, onAddFilter, onUpdateFilter, onRemoveFilter, onRemove }) {
-  const nt = NODE_TYPES.find(t => t.id === node.type)
-  const fields = COMMON_FIELDS[node.type] ?? []
+  const { nodeTypes } = useGraphSchema()
+  const nt = nodeTypes.find(t => t.id === node.type)
+  const { data: propData } = useQuery({
+    queryKey: ['schema-props', node.type],
+    queryFn:  () => fetch(`/api/schema/properties/${node.type}?live=true`).then(r => r.json()),
+    staleTime: 5 * 60_000,
+  })
+  const fields = (propData?.properties ?? []).map(p => p.key)
 
   return (
     <motion.div
@@ -580,14 +613,16 @@ function NodeClauseCard({ node, onAliasChange, onAddFilter, onUpdateFilter, onRe
 }
 
 function RelationshipCard({ rel, aliases, onChange, onRemove }) {
+  const { relTypes, relTypeFull } = useGraphSchema()
+  const relInfo = relTypeFull.find(r => r.id === rel.type)
   return (
-    <motion.div layout className="qb-rel-card">
+    <motion.div layout className="qb-rel-card" title={relInfo?.description}>
       <ArrowRight size={12} className="qb-rel-icon" />
       <select value={rel.from} onChange={e => onChange({ from: e.target.value })}>
         {aliases.map(a => <option key={a} value={a}>{a}</option>)}
       </select>
       <select value={rel.type} onChange={e => onChange({ type: e.target.value })}>
-        {RELATIONSHIP_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+        {relTypes.map(t => <option key={t} value={t}>{t}</option>)}
       </select>
       <ArrowRight size={12} />
       <select value={rel.to} onChange={e => onChange({ to: e.target.value })}>
@@ -604,6 +639,13 @@ function RelationshipCard({ rel, aliases, onChange, onRemove }) {
       <button onClick={onRemove} className="qb-filter-remove"><X size={11} /></button>
     </motion.div>
   )
+}
+
+function fmtCount(n: number) {
+  if (n == null) return ''
+  if (n >= 1_000_000) return `${(n/1_000_000).toFixed(1)}M`
+  if (n >= 1_000)     return `${(n/1_000).toFixed(0)}K`
+  return String(n)
 }
 
 

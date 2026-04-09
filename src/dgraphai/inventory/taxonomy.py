@@ -1052,6 +1052,233 @@ INVENTORY: list[Category] = [
         columns=_base() + [Column("file_category","Type",90,"badge")],
         tags=["calendar","contacts"],
     ),
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # GROUP: In-Schema (zero-cost) — properties already written, now surfaced
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    # ── Video detail ───────────────────────────────────────────────────────────────
+
+    Category(
+        id="video-frame-rates", name="Video by Frame Rate", group="Media Detail",
+        description="Video files grouped by frame rate (fps)",
+        icon="🎞️", color="#60a5fa",
+        cypher="MATCH (f:File) WHERE f.file_category = 'video' AND f.fps IS NOT NULL AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("fps","FPS",60,"num"), Column("height","Res",60,"num"), Column("video_codec","Codec",80,"badge")],
+        tags=["video","fps"],
+        subcategories=[
+            Category(id="video-24fps", name="24p / 23.976p", group="Media Detail", parent_id="video-frame-rates",
+                description="Cinema-standard 24 fps video",
+                icon="🎬", color="#60a5fa",
+                cypher="MATCH (f:File) WHERE f.file_category = 'video' AND f.fps >= 23.9 AND f.fps <= 24.1 AND f.tenant_id = $tid RETURN f",
+                columns=_base() + [Column("fps","FPS",60,"num"), Column("height","Res",60,"num"), Column("hdr_format","HDR",80,"badge")],
+                tags=["video","fps","cinema"]),
+            Category(id="video-60fps", name="60p / 59.94p", group="Media Detail", parent_id="video-frame-rates",
+                description="High frame rate 60 fps video",
+                icon="⚡", color="#3b82f6",
+                cypher="MATCH (f:File) WHERE f.file_category = 'video' AND f.fps >= 59.0 AND f.tenant_id = $tid RETURN f",
+                columns=_base() + [Column("fps","FPS",60,"num"), Column("height","Res",60,"num"), Column("video_codec","Codec",80,"badge")],
+                tags=["video","fps","hfr"]),
+        ],
+    ),
+
+    Category(
+        id="video-bit-depth", name="10-bit / 12-bit Video", group="Media Detail",
+        description="Video files with 10-bit or 12-bit color depth",
+        icon="🎨", color="#818cf8",
+        cypher="MATCH (f:File) WHERE f.file_category = 'video' AND f.bit_depth >= 10 AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("bit_depth","Bit Depth",80,"num"), Column("color_space","Color Space",100,"badge"), Column("hdr_format","HDR",80,"badge"), Column("height","Res",60,"num")],
+        tags=["video","bit-depth","color"],
+    ),
+
+    Category(
+        id="video-subtitles", name="Video with Subtitles", group="Media Detail",
+        description="Video files with embedded subtitle tracks",
+        icon="💬", color="#4f8ef7",
+        cypher="MATCH (f:File) WHERE f.file_category = 'video' AND f.subtitle_languages IS NOT NULL AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("subtitle_languages","Subtitle Langs",160,"text"), Column("height","Res",60,"num"), Column("audio_codec","Audio",80,"badge")],
+        tags=["video","subtitles"],
+    ),
+
+    Category(
+        id="video-wide-color", name="Wide Color Gamut (BT.2020)", group="Media Detail",
+        description="Video encoded in BT.2020 wide color space",
+        icon="🌈", color="#6366f1",
+        cypher="MATCH (f:File) WHERE f.file_category = 'video' AND f.color_space CONTAINS 'bt2020' AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("color_space","Color Space",100,"badge"), Column("hdr_format","HDR",80,"badge"), Column("bit_depth","Bit Depth",80,"num")],
+        tags=["video","color","wcg"],
+    ),
+
+    # ── Audio detail ───────────────────────────────────────────────────────────────
+
+    Category(
+        id="audio-bpm", name="Audio by BPM Range", group="Media Detail",
+        description="Music categorized by tempo (beats per minute)",
+        icon="🥁", color="#a78bfa",
+        cypher="MATCH (f:File) WHERE f.file_category = 'audio' AND f.bpm IS NOT NULL AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("bpm","BPM",60,"num"), Column("artist","Artist",130,"text"), Column("genre","Genre",90,"badge")],
+        tags=["audio","bpm","music"],
+        subcategories=[
+            Category(id="audio-slow", name="Slow (<80 BPM)", group="Media Detail", parent_id="audio-bpm",
+                description="Slow tempo music under 80 BPM",
+                icon="🐢", color="#818cf8",
+                cypher="MATCH (f:File) WHERE f.file_category = 'audio' AND f.bpm < 80 AND f.tenant_id = $tid RETURN f",
+                columns=_base() + [Column("bpm","BPM",60,"num"), Column("artist","Artist",130,"text"), Column("genre","Genre",90,"badge")],
+                tags=["audio","bpm"]),
+            Category(id="audio-mid", name="Mid Tempo (80–120 BPM)", group="Media Detail", parent_id="audio-bpm",
+                description="Mid tempo music 80–120 BPM",
+                icon="🚶", color="#a78bfa",
+                cypher="MATCH (f:File) WHERE f.file_category = 'audio' AND f.bpm >= 80 AND f.bpm < 120 AND f.tenant_id = $tid RETURN f",
+                columns=_base() + [Column("bpm","BPM",60,"num"), Column("artist","Artist",130,"text"), Column("genre","Genre",90,"badge")],
+                tags=["audio","bpm"]),
+            Category(id="audio-fast", name="Fast (120–160 BPM)", group="Media Detail", parent_id="audio-bpm",
+                description="Fast tempo music 120–160 BPM",
+                icon="🏃", color="#c084fc",
+                cypher="MATCH (f:File) WHERE f.file_category = 'audio' AND f.bpm >= 120 AND f.bpm < 160 AND f.tenant_id = $tid RETURN f",
+                columns=_base() + [Column("bpm","BPM",60,"num"), Column("artist","Artist",130,"text"), Column("genre","Genre",90,"badge")],
+                tags=["audio","bpm"]),
+            Category(id="audio-veryfast", name="Very Fast (160+ BPM)", group="Media Detail", parent_id="audio-bpm",
+                description="High-energy music over 160 BPM",
+                icon="⚡", color="#e879f9",
+                cypher="MATCH (f:File) WHERE f.file_category = 'audio' AND f.bpm >= 160 AND f.tenant_id = $tid RETURN f",
+                columns=_base() + [Column("bpm","BPM",60,"num"), Column("artist","Artist",130,"text"), Column("genre","Genre",90,"badge")],
+                tags=["audio","bpm"]),
+        ],
+    ),
+
+    Category(
+        id="audio-musicbrainz", name="MusicBrainz Matched", group="Media Detail",
+        description="Audio files with a MusicBrainz ID (acoustid matched)",
+        icon="🎵", color="#8b5cf6",
+        cypher="MATCH (f:File) WHERE f.file_category = 'audio' AND f.musicbrainz_id IS NOT NULL AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("artist","Artist",130,"text"), Column("album","Album",130,"text"), Column("musicbrainz_id","MBID",200,"mono")],
+        tags=["audio","musicbrainz"],
+    ),
+
+    # ── Image detail ───────────────────────────────────────────────────────────────
+
+    Category(
+        id="images-10bit", name="High Bit-Depth Images", group="Media Detail",
+        description="Images with 10-bit or higher color depth (ProPhoto, 16-bit TIFF)",
+        icon="🎨", color="#34d399",
+        cypher="MATCH (f:File) WHERE f.file_category = 'image' AND f.bit_depth >= 30 AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("bit_depth","Bit Depth",80,"num"), Column("color_profile","Profile",100,"badge"), Column("camera_model","Camera",130,"text")],
+        tags=["images","bit-depth","color"],
+    ),
+
+    Category(
+        id="images-long-exposure", name="Long Exposure", group="Media Detail",
+        description="Photos with shutter speed slower than 1/4 sec",
+        icon="🌃", color="#10b981",
+        cypher="MATCH (f:File) WHERE f.file_category = 'image' AND f.shutter_speed IS NOT NULL AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("shutter_speed","Shutter",100,"text"), Column("aperture","Aperture",80,"num"), Column("iso","ISO",60,"num"), Column("camera_model","Camera",130,"text")],
+        tags=["images","exposure","camera"],
+    ),
+
+    Category(
+        id="images-telephoto", name="Telephoto Shots (>200mm)", group="Media Detail",
+        description="Photos taken with focal length over 200mm",
+        icon="🔭", color="#059669",
+        cypher="MATCH (f:File) WHERE f.file_category = 'image' AND f.focal_length > 200 AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("focal_length","Focal (mm)",90,"num"), Column("camera_model","Camera",130,"text"), Column("lens","Lens",160,"text")],
+        tags=["images","telephoto","camera"],
+    ),
+
+    Category(
+        id="images-wide-angle", name="Wide Angle (<24mm)", group="Media Detail",
+        description="Photos taken with focal length under 24mm",
+        icon="🌄", color="#34d399",
+        cypher="MATCH (f:File) WHERE f.file_category = 'image' AND f.focal_length < 24 AND f.focal_length > 0 AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("focal_length","Focal (mm)",90,"num"), Column("camera_model","Camera",130,"text"), Column("lens","Lens",160,"text")],
+        tags=["images","wide-angle","camera"],
+    ),
+
+    Category(
+        id="images-high-iso", name="High ISO (>3200)", group="Media Detail",
+        description="Photos taken at ISO 3200 or higher — potential noise",
+        icon="📷", color="#6b7280",
+        cypher="MATCH (f:File) WHERE f.file_category = 'image' AND f.iso > 3200 AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("iso","ISO",60,"num"), Column("camera_model","Camera",130,"text"), Column("shutter_speed","Shutter",100,"text"), Column("aperture","Aperture",80,"num")],
+        tags=["images","iso","lowlight","camera"],
+    ),
+
+    # ── Document detail ──────────────────────────────────────────────────────────
+
+    Category(
+        id="docs-encrypted", name="Encrypted Documents", group="Documents & Text",
+        description="Office/PDF files with encryption enabled",
+        icon="🔐", color="#fbbf24",
+        cypher="MATCH (f:File) WHERE f.file_category = 'document' AND f.is_encrypted = true AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("mime_type","Format",110,"badge"), Column("author","Author",130,"text"), Column("page_count","Pages",65,"num")],
+        tags=["documents","encrypted","security"],
+    ),
+
+    Category(
+        id="docs-with-macros", name="Contains Macros", group="Documents & Text",
+        description="Office files with embedded macros (potential risk)",
+        icon="⚠️", color="#f59e0b",
+        cypher="MATCH (f:File) WHERE f.file_category = 'document' AND f.has_macros = true AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("mime_type","Format",110,"badge"), Column("author","Author",130,"text"), Column("pii_detected","PII",60,"bool")],
+        tags=["documents","macros","security"],
+    ),
+
+    Category(
+        id="docs-digitally-signed", name="Digitally Signed", group="Documents & Text",
+        description="Documents with a valid digital signature",
+        icon="✍️", color="#34d399",
+        cypher="MATCH (f:File) WHERE f.file_category = 'document' AND f.is_signed = true AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("mime_type","Format",110,"badge"), Column("author","Author",130,"text"), Column("page_count","Pages",65,"num")],
+        tags=["documents","signed","trust"],
+    ),
+
+    # ── Binary detail ────────────────────────────────────────────────────────────
+
+    Category(
+        id="exe-universal", name="Universal / Fat Binaries", group="Software",
+        description="Mach-O fat binaries supporting multiple architectures",
+        icon="🍎", color="#8b5cf6",
+        cypher="MATCH (f:File) WHERE f.is_universal = true AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("architectures","Architectures",180,"text"), Column("signed","Signed",70,"bool"), Column("company_name","Vendor",130,"text")],
+        tags=["software","macos","universal"],
+    ),
+
+    Category(
+        id="exe-versions-behind", name="Significantly Outdated (3+ versions)", group="Software",
+        description="Applications 3 or more versions behind the latest release",
+        icon="🐌", color="#f87171",
+        cypher="MATCH (f:File) WHERE f.version_behind >= 3 AND f.tenant_id = $tid RETURN f",
+        columns=_base() + [Column("file_version","Current",90,"text"), Column("latest_version","Latest",90,"text"), Column("version_behind","Behind",70,"num"), Column("eol_status","EOL",80,"badge")],
+        tags=["software","outdated","compliance"],
+    ),
+
+    # ── Certificate detail ────────────────────────────────────────────────────────
+
+    Category(
+        id="certs-ca", name="Certificate Authorities", group="Security",
+        description="CA certificates (is_ca = true)",
+        icon="🏛️", color="#4ade80",
+        cypher="MATCH (c:Certificate) WHERE c.is_ca = true AND c.tenant_id = $tid RETURN c AS f",
+        columns=[Column("cert_subject","Subject",200,"text"), Column("cert_issuer","Issuer",160,"text"), Column("cert_valid_to","Expires",130,"date"), Column("is_self_signed","Self-Signed",90,"bool")],
+        tags=["certificates","ca","security"],
+    ),
+
+    Category(
+        id="certs-weak-keys", name="Weak Key Size (<2048-bit RSA)", group="Security",
+        description="Certificates with RSA keys shorter than 2048 bits",
+        icon="⚠️", color="#fbbf24",
+        cypher="MATCH (c:Certificate) WHERE c.key_algorithm STARTS WITH 'RSA' AND c.key_size < 2048 AND c.tenant_id = $tid RETURN c AS f",
+        columns=[Column("cert_subject","Subject",200,"text"), Column("cert_key_algorithm","Algorithm",100,"badge"), Column("key_size","Key Bits",80,"num"), Column("cert_valid_to","Expires",130,"date")],
+        tags=["certificates","security","weak"],
+    ),
+
+    Category(
+        id="certs-ec", name="EC / Ed25519 Certificates", group="Security",
+        description="Modern elliptic curve certificates",
+        icon="✅", color="#22c55e",
+        cypher="MATCH (c:Certificate) WHERE (c.key_algorithm STARTS WITH 'EC' OR c.key_algorithm = 'Ed25519') AND c.tenant_id = $tid RETURN c AS f",
+        columns=[Column("cert_subject","Subject",200,"text"), Column("cert_key_algorithm","Algorithm",100,"badge"), Column("cert_valid_to","Expires",130,"date"), Column("is_self_signed","Self-Signed",90,"bool")],
+        tags=["certificates","ec","modern"],
+    ),
 ]
 
 
