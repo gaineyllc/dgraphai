@@ -1,14 +1,13 @@
 // @ts-nocheck
 /**
- * InventoryPage — normalized data & technology taxonomy.
- *
- * Like Wiz "Technology" view: click a category → navigate to QueryWorkspace
- * with that query pre-loaded. Every navigation encodes the query in the URL.
+ * Data Inventory — normalized taxonomy of every data category in the graph.
+ * Each category shows a node count. Click → QueryWorkspace filtered to those nodes.
+ * URL encodes the Cypher query so every view is shareable.
  */
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Search, ChevronRight, Database } from 'lucide-react'
+import { Search, ChevronRight, Database, Layers } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import './InventoryPage.css'
 
@@ -17,7 +16,7 @@ const api = {
 }
 
 export function InventoryPage() {
-  const navigate   = useNavigate()
+  const navigate        = useNavigate()
   const [search, setSearch] = useState('')
 
   const { data, isLoading } = useQuery({
@@ -44,98 +43,164 @@ export function InventoryPage() {
   }, [groups, search])
 
   const handleClick = (cat: any) => {
-    // Navigate to QueryWorkspace with query pre-loaded in URL
     navigate(cat.query_url)
   }
 
-  const totalCount = Object.values(groups).flat()
-    .reduce((sum, c) => sum + (c.count ?? 0), 0)
+  // Summary stats
+  const allCats     = Object.values(groups).flat()
+  const totalNodes  = allCats.reduce((s, c) => s + (c.count ?? 0), 0)
+  const totalGroups = Object.keys(groups).length
 
   return (
     <div className="inventory-page">
-      {/* Header */}
+
+      {/* ── Header ── */}
       <div className="inv-header">
-        <div>
+        <div className="inv-header-left">
           <h1>Data Inventory</h1>
-          <p>Browse all data categories — click any to explore in the graph</p>
+          <p>Every data category indexed across your connected sources</p>
         </div>
-        <div className="inv-header-right">
-          <div className="inv-total">
+        <div className="inv-header-stats">
+          <div className="inv-stat-pill">
             <Database size={12} />
-            {fmt(totalCount)} total objects
+            <span className="inv-stat-num">{fmt(totalNodes)}</span>
+            <span className="inv-stat-label">total nodes</span>
+          </div>
+          <div className="inv-stat-pill">
+            <Layers size={12} />
+            <span className="inv-stat-num">{allCats.length}</span>
+            <span className="inv-stat-label">categories</span>
           </div>
         </div>
       </div>
 
-      {/* Search */}
+      {/* ── Search ── */}
       <div className="inv-search-row">
         <div className="inv-search">
           <Search size={13} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search data categories…"
+            placeholder="Filter categories…"
           />
+          {search && (
+            <button className="inv-search-clear" onClick={() => setSearch('')}>✕</button>
+          )}
         </div>
       </div>
 
-      {/* Groups */}
+      {/* ── Groups ── */}
       {isLoading ? (
-        <div className="inv-loading">Loading inventory…</div>
+        <LoadingSkeleton />
       ) : (
         <div className="inv-groups">
-          {Object.entries(filtered).map(([group, cats]) => (
-            <div key={group} className="inv-group">
-              <div className="inv-group-title">{group}</div>
-              <div className="inv-grid">
-                {cats.map((cat, i) => (
-                  <motion.button
-                    key={cat.id}
-                    className="inv-card"
-                    style={{ '--c': cat.color } as any}
-                    onClick={() => handleClick(cat)}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                    whileHover={{ y: -2 }}
-                  >
-                    <div className="inv-card-icon"
-                      style={{ background: `${cat.color}18`, border: `1px solid ${cat.color}30` }}>
-                      {cat.icon}
-                    </div>
-                    <div className="inv-card-body">
-                      <div className="inv-card-name">{cat.name}</div>
-                      <div className="inv-card-desc">{cat.description}</div>
-                      {cat.tags?.length > 0 && (
-                        <div className="inv-card-tags">
-                          {cat.tags.map((t: string) => (
-                            <span key={t} className="inv-tag">{t}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="inv-card-right">
-                      <div className="inv-card-count" style={{ color: cat.color }}>
-                        {cat.count === null || cat.count === undefined
-                          ? '—'
-                          : fmt(cat.count)}
-                      </div>
-                      <ChevronRight size={14} className="inv-card-arrow" />
-                    </div>
-                  </motion.button>
-                ))}
+          {Object.entries(filtered).map(([group, cats]) => {
+            const groupTotal = cats.reduce((s, c) => s + (c.count ?? 0), 0)
+            return (
+              <div key={group} className="inv-group">
+                <div className="inv-group-header">
+                  <span className="inv-group-title">{group}</span>
+                  <span className="inv-group-count">
+                    {fmt(groupTotal)} nodes · {cats.length} categories
+                  </span>
+                </div>
+                <div className="inv-grid">
+                  {cats.map((cat, i) => (
+                    <CategoryCard
+                      key={cat.id}
+                      cat={cat}
+                      index={i}
+                      onClick={() => handleClick(cat)}
+                    />
+                  ))}
+                </div>
               </div>
+            )
+          })}
+          {Object.keys(filtered).length === 0 && search && (
+            <div className="inv-no-results">
+              No categories match <strong>"{search}"</strong>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
   )
 }
 
+// ── Category card ──────────────────────────────────────────────────────────────
+
+function CategoryCard({ cat, index, onClick }) {
+  const hasCount = cat.count !== null && cat.count !== undefined
+
+  return (
+    <motion.button
+      className={`inv-card ${!hasCount ? 'inv-card-unknown' : ''}`}
+      style={{ '--c': cat.color } as any}
+      onClick={onClick}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.025, duration: 0.18 }}
+      whileHover={{ y: -2 }}
+    >
+      {/* Left: icon */}
+      <div className="inv-card-icon-wrap"
+        style={{ background: `${cat.color}14`, border: `1px solid ${cat.color}25` }}>
+        <span className="inv-card-icon">{cat.icon}</span>
+      </div>
+
+      {/* Center: name + description */}
+      <div className="inv-card-body">
+        <div className="inv-card-name">{cat.name}</div>
+        <div className="inv-card-desc">{cat.description}</div>
+      </div>
+
+      {/* Right: node count — the prominent number */}
+      <div className="inv-card-count-block">
+        <div className="inv-card-count" style={{ color: hasCount ? cat.color : '#35354a' }}>
+          {hasCount ? fmt(cat.count) : '—'}
+        </div>
+        <div className="inv-card-count-label">nodes</div>
+        <ChevronRight size={12} className="inv-card-arrow" />
+      </div>
+    </motion.button>
+  )
+}
+
+// ── Loading skeleton ───────────────────────────────────────────────────────────
+
+function LoadingSkeleton() {
+  return (
+    <div className="inv-groups">
+      {[6, 4, 5].map((n, gi) => (
+        <div key={gi} className="inv-group">
+          <div className="inv-group-header">
+            <div className="inv-skel inv-skel-title" />
+            <div className="inv-skel inv-skel-badge" />
+          </div>
+          <div className="inv-grid">
+            {Array.from({ length: n }).map((_, i) => (
+              <div key={i} className="inv-card inv-card-skel">
+                <div className="inv-skel inv-skel-icon" />
+                <div className="inv-card-body">
+                  <div className="inv-skel inv-skel-name" />
+                  <div className="inv-skel inv-skel-desc" />
+                </div>
+                <div className="inv-skel inv-skel-count" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
 function fmt(n: number) {
   if (!n && n !== 0) return '—'
-  if (n >= 1e6) return `${(n/1e6).toFixed(1)}M`
-  if (n >= 1e3) return `${(n/1e3).toFixed(1)}K`
-  return String(n)
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`
+  return n.toLocaleString()
 }
