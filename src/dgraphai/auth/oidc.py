@@ -20,6 +20,7 @@ Token validation:
 """
 from __future__ import annotations
 
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -132,6 +133,52 @@ async def get_auth_context(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     issuer = unverified.get("iss", "")
+    auth_type = unverified.get("auth_type", "")
+
+    # ── Local auth JWT (issued by /api/auth/signup or /api/auth/login) ────────
+    # These tokens have auth_type="local" and are validated with JWT_SECRET.
+    # They don't go through OIDC config lookup.
+    if auth_type == "local" or (issuer and issuer == os.getenv("APP_URL", "https://app.dgraph.ai")):
+        jwt_secret = os.getenv("JWT_SECRET", "")
+        if not jwt_secret:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="JWT not configured")
+        try:
+            claims = jwt.decode(token, jwt_secret, algorithms=["HS256"],
+                                options={"verify_aud": False})
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid local token")
+
+        # Build AuthContext from local JWT claims
+        tenant_result = await db.execute(
+            select(Tenant).where(Tenant.id == claims.get("tenant_id")).limit(1)
+        )
+        tenant = tenant_result.scalar_one_or_none()
+        if not tenant:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Tenant not found")
+
+        user_result = await db.execute(
+            select(User).where(User.id == claims.get("sub")).limit(1)
+        )
+        user = user_result.scalar_one_or_none()
+
+        # Load roles and permissions for local auth users (same as OIDC path)
+        from src.dgraphai.rbac.engine import load_user_permissions
+        try:
+            roles, permissions = await load_user_permissions(
+                claims.get("sub", ""), str(tenant.id), db
+            )
+        except Exception:
+            roles, permissions = [], set()
+
+        return AuthContext(
+            user_id     = claims.get("sub", ""),
+            email       = claims.get("email", ""),
+            tenant_id   = str(tenant.id),
+            roles       = roles,
+            permissions = permissions,
+        )
+    # ─────────────────────────────────────────────────────────────────────────
+
     if not issuer:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing issuer claim")
 

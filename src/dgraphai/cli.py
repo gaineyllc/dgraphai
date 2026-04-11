@@ -38,10 +38,16 @@ async def _create_admin(email: str, password: str, name: str, company: str):
     from src.dgraphai.db.models import Tenant, User, LocalCredential, Role, RoleAssignment
     from sqlalchemy import select
     import uuid
-    from passlib.context import CryptContext
+    import bcrypt as _bcrypt
     from datetime import datetime, timezone
 
-    pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    class _PwdCtx:
+    def hash(self, password: str) -> str:
+        return _bcrypt.hashpw(password.encode()[:72], _bcrypt.gensalt(rounds=12)).decode()
+    def verify(self, password: str, hashed: str) -> bool:
+        try: return _bcrypt.checkpw(password.encode()[:72], hashed.encode())
+        except: return False
+pwd_ctx = _PwdCtx()
 
     await create_tables()
 
@@ -135,3 +141,4 @@ async def _health():
 
 if __name__ == "__main__":
     cli()
+

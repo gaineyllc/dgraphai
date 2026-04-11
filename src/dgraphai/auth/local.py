@@ -20,7 +20,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
-from passlib.context import CryptContext
+import bcrypt as _bcrypt
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 import jwt
@@ -35,8 +35,18 @@ from src.dgraphai.auth.email import send_verification_email, send_password_reset
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-# Password hashing
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing — bcrypt direct (passlib 1.7.4 incompatible with bcrypt 4.x+)
+class _PwdCtx:
+    """Drop-in passlib.hash() / .verify() using bcrypt directly."""
+    def hash(self, password: str) -> str:
+        return _bcrypt.hashpw(password.encode()[:72], _bcrypt.gensalt(rounds=12)).decode()
+    def verify(self, password: str, hashed: str) -> bool:
+        try:
+            return _bcrypt.checkpw(password.encode()[:72], hashed.encode())
+        except Exception:
+            return False
+
+pwd_ctx = _PwdCtx()
 
 # JWT config
 JWT_SECRET   = os.getenv("JWT_SECRET", secrets.token_hex(32))
@@ -669,11 +679,14 @@ async def change_password(
 
 def _issue_jwt(user: User, tenant: Tenant | None, session_id: str | None = None) -> str:
     now = datetime.now(timezone.utc)
+    app_url = os.getenv("APP_URL", "https://app.dgraph.ai")
     payload = {
+        "iss":       app_url,          # issuer — required by get_auth_context
         "sub":       str(user.id),
         "email":     user.email,
         "tenant_id": str(user.tenant_id),
         "plan":      tenant.plan if tenant else "starter",
+        "auth_type": "local",           # distinguish from OIDC tokens
         "iat":       int(now.timestamp()),
         "exp":       int((now + timedelta(hours=JWT_EXPIRY_H)).timestamp()),
     }
