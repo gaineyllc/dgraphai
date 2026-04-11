@@ -1,0 +1,7 @@
+2026-04-11T17:18:15.951-0400	[34mINFO[0m	dgraph-agent/main.go:75	dgraph-agent starting	{"version": "0.1.0", "commit": "none", "os": "windows", "arch": "amd64", "api_endpoint": "http://localhost:8001"}
+2026-04-11T17:18:15.979-0400	[34mINFO[0m	dgraph-agent/main.go:110	fetching connector config from platform...
+2026-04-11T17:18:15.995-0400	[34mINFO[0m	platform/client.go:137	fetched config from platform	{"connectors": 1, "tenant_id": "c414b40a-97db-4664-a010-e253e7928d63"}
+2026-04-11T17:18:15.996-0400	[34mINFO[0m	dgraph-agent/main.go:131	loaded connector config from platform	{"connectors": 1, "agent_id": "aaf0a9ad-82c8-4c65-8c30-8cd1578db196"}
+2026-04-11T17:18:16.007-0400	[34mINFO[0m	dgraph-agent/main.go:158	agent running	{"scan_interval": 300, "health": "127.0.0.1:9090"}
+2026-04-11T17:18:16.007-0400	[34mINFO[0m	dgraph-agent/main.go:253	starting scan	{"id": "cb96c98f-0029-4f62-b709-93352539459b", "type": "local", "name": "Workspace Test"}
+2026-04-11T17:18:16.007-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "cb96c98f-0029-4f62-b709-93352539459b-1775942296007568600", "connector_id": "cb96c98f-0029-4f62-b709-93352539459b", "status": "started"}

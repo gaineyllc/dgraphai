@@ -5,6 +5,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -77,8 +78,16 @@ func Init(cfgFile string) (*Config, error) {
 	v.SetDefault("air_gapped",         false)
 
 	// Env var override (DGRAPH_AGENT_*)
+	// DGRAPH_AGENT_API_KEY → api_key, DGRAPH_AGENT_API_ENDPOINT → api_endpoint
 	v.SetEnvPrefix("DGRAPH_AGENT")
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
+	// Explicit binds for common env vars (viper AutomaticEnv can miss these)
+	v.BindEnv("api_key", "DGRAPH_AGENT_API_KEY")           //nolint:errcheck
+	v.BindEnv("api_endpoint", "DGRAPH_AGENT_API_ENDPOINT") //nolint:errcheck
+	v.BindEnv("tenant_id", "DGRAPH_AGENT_TENANT_ID")       //nolint:errcheck
+	v.BindEnv("agent_id", "DGRAPH_AGENT_ID")               //nolint:errcheck
+	v.BindEnv("log_level", "DGRAPH_AGENT_LOG_LEVEL")       //nolint:errcheck
 
 	// Config file
 	if cfgFile != "" {
@@ -109,15 +118,13 @@ func Init(cfgFile string) (*Config, error) {
 }
 
 func validate(cfg *Config) error {
-	if cfg.TenantID == "" {
-		return fmt.Errorf("tenant_id is required (set DGRAPH_AGENT_TENANT_ID)")
-	}
+	// TenantID is optional at startup — fetched from platform on first connect
+	// APIKey is required (unless air-gapped with local config)
 	if cfg.APIKey == "" && !cfg.AirGapped {
 		return fmt.Errorf("api_key is required (set DGRAPH_AGENT_API_KEY)")
 	}
-	if len(cfg.Connectors) == 0 {
-		return fmt.Errorf("at least one connector must be configured")
-	}
+	// Connectors are optional at startup — fetched from platform on first connect
+	_ = cfg.Connectors // suppresses linter; populated after FetchConfig
 	for i, c := range cfg.Connectors {
 		if c.Type == "" {
 			return fmt.Errorf("connector[%d]: type is required", i)

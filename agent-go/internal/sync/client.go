@@ -5,10 +5,10 @@ package sync
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -62,6 +62,12 @@ type Queue interface {
 	Enqueue(delta GraphDelta) error
 	Flush(ctx context.Context, send func(GraphDelta) error) error
 	Pending() (int, error)
+}
+
+// SetIDs updates the agent/tenant IDs after fetching from the platform.
+func (c *Client) SetIDs(tenantID, agentID string) {
+	if tenantID != "" { c.tenantID = tenantID }
+	if agentID  != "" { c.agentID  = agentID  }
 }
 
 func New(endpoint, apiKey, tenantID, agentID string, log *zap.Logger, q Queue) *Client {
@@ -152,6 +158,66 @@ func (c *Client) Sync(ctx context.Context, conn connector.Connector, connID stri
 	return result, err
 }
 
+// DeltaChunk is the wire format the Python platform API expects.
+// It maps from the internal GraphDelta format.
+type DeltaChunk struct {
+	ScannerID  string           `json:"scanner_id"`
+	TenantID   string           `json:"tenant_id"`
+	ScanJobID  string           `json:"scan_job_id"`
+	ChunkIndex int              `json:"chunk_index"`
+	IsFinal    bool             `json:"is_final"`
+	ScannedAt  string           `json:"scanned_at"`
+	Stats      map[string]int   `json:"stats"`
+	Nodes      []map[string]any `json:"nodes"`
+	Edges      []map[string]any `json:"edges"`
+}
+
+// toDeltaChunk converts internal GraphDelta to the platform wire format.
+func (c *Client) toDeltaChunk(d GraphDelta, isFinal bool) DeltaChunk {
+	nodes := make([]map[string]any, 0, len(d.Files))
+	for _, f := range d.Files {
+		node := map[string]any{
+			"op":           "upsert",    // required by platform scanner/sync
+			"type":         "File",      // node type for graph schema
+			"id":           f.Path,
+			"labels":       []string{"File"},
+			"props": map[string]any{
+				"path":          f.Path,
+				"name":          f.Name,
+				"size":          f.Size,
+				"modified_at":   f.ModifiedAt.Format(time.RFC3339),
+				"extension":     f.Extension,
+				"sha256":        f.SHA256,
+				"connector_id":  f.ConnectorID,
+				"tenant_id":     d.TenantID,
+				"mime_type":     f.MIMEType,
+				"file_category": f.FileCategory,
+				"protocol":      f.Protocol,
+				"host":          f.Host,
+			},
+		}
+		// Add enriched attributes into props
+		if props, ok := node["props"].(map[string]any); ok {
+			for k, v := range f.Attrs {
+				props[k] = v
+			}
+		}
+		nodes = append(nodes, node)
+	}
+
+	return DeltaChunk{
+		ScannerID:  c.agentID,
+		TenantID:   d.TenantID,
+		ScanJobID:  d.ScanID,
+		ChunkIndex: d.ChunkIndex,
+		IsFinal:    isFinal,
+		ScannedAt:  d.Timestamp.Format(time.RFC3339),
+		Stats:      map[string]int{"files": len(d.Files)},
+		Nodes:      nodes,
+		Edges:      []map[string]any{},
+	}
+}
+
 // sendDelta sends a GraphDelta to the cloud, falling back to offline queue.
 func (c *Client) sendDelta(ctx context.Context, delta GraphDelta) error {
 	// Attempt live send with retries
@@ -165,7 +231,8 @@ func (c *Client) sendDelta(ctx context.Context, delta GraphDelta) error {
 			}
 		}
 
-		if err := c.postJSON(ctx, "/api/scanner/delta", delta); err != nil {
+		chunk := c.toDeltaChunk(delta, false)
+		if err := c.postJSON(ctx, "/api/scanner/sync", chunk); err != nil {
 			lastErr = err
 			c.log.Warn("Delta send failed, will retry",
 				zap.Int("attempt", attempt+1),
@@ -196,19 +263,20 @@ func (c *Client) FlushQueue(ctx context.Context) error {
 	}
 	c.log.Info("Flushing offline queue", zap.Int("pending", pending))
 	return c.queue.Flush(ctx, func(d GraphDelta) error {
-		return c.postJSON(ctx, "/api/scanner/delta", d)
+		chunk := c.toDeltaChunk(d, false)
+		return c.postJSON(ctx, "/api/scanner/sync", chunk)
 	})
 }
 
 func (c *Client) sendScanEvent(ctx context.Context, scanID, connID, status string) error {
-	return c.postJSON(ctx, "/api/scanner/scan-event", map[string]string{
-		"scan_id":      scanID,
-		"connector_id": connID,
-		"agent_id":     c.agentID,
-		"tenant_id":    c.tenantID,
-		"status":       status,
-		"timestamp":    time.Now().UTC().Format(time.RFC3339),
-	})
+	// Scan events are informational — log locally, don't send to API
+	// (the API doesn't have a dedicated scan-event endpoint)
+	c.log.Info("scan event",
+		zap.String("scan_id", scanID),
+		zap.String("connector_id", connID),
+		zap.String("status", status),
+	)
+	return nil
 }
 
 func (c *Client) postJSON(ctx context.Context, path string, body any) error {
@@ -217,24 +285,17 @@ func (c *Client) postJSON(ctx context.Context, path string, body any) error {
 		return fmt.Errorf("marshal: %w", err)
 	}
 
-	// Gzip compress payloads >1KB
+	// NOTE: gzip disabled — platform does not yet support Content-Encoding: gzip
 	var buf bytes.Buffer
+	buf.Write(data)
 	var contentEncoding string
-	if len(data) > 1024 {
-		gz := gzip.NewWriter(&buf)
-		gz.Write(data)
-		gz.Close()
-		contentEncoding = "gzip"
-	} else {
-		buf.Write(data)
-	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", c.endpoint+path, &buf)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	req.Header.Set("X-Scanner-Key", c.apiKey)  // platform uses X-Scanner-Key for agent auth
 	req.Header.Set("X-Agent-ID", c.agentID)
 	req.Header.Set("X-Tenant-ID", c.tenantID)
 	if contentEncoding != "" {
@@ -248,7 +309,8 @@ func (c *Client) postJSON(ctx context.Context, path string, body any) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("POST %s: HTTP %d", path, resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("POST %s: HTTP %d: %s", path, resp.StatusCode, string(body))
 	}
 	return nil
 }
@@ -260,3 +322,4 @@ func (c *Client) Heartbeat(ctx context.Context, health map[string]any) error {
 	health["timestamp"] = time.Now().UTC().Format(time.RFC3339)
 	return c.postJSON(ctx, "/api/scanner/heartbeat", health)
 }
+

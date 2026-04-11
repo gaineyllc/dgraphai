@@ -2,23 +2,26 @@
 Agent management API — config delivery, heartbeat, status.
 
 dgraph-agent polls these endpoints using its API key:
-  GET  /api/agent/config          → what connectors to scan + settings
+  GET  /api/agent/config          → connectors to scan + settings
   POST /api/agent/heartbeat       → liveness ping + metrics update
-  GET  /api/agent/token           → (wizard) generate + return a new agent token
-  GET  /api/agents                → (UI) list all agents for this tenant
-  GET  /api/agents/{id}           → (UI) single agent detail
-  DELETE /api/agents/{id}         → (UI) revoke agent
+
+UI endpoints (JWT auth):
+  POST /api/agent/token           → generate + return a new agent API key
+  GET  /api/agents                → list all agents for this tenant
+  GET  /api/agents/{id}           → single agent detail + is_online
+  DELETE /api/agents/{id}         → revoke agent
 """
 from __future__ import annotations
 
 import hashlib
 import os
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.session import get_db
 from ..db.connector_models import Connector
@@ -58,7 +61,7 @@ class HeartbeatRequest(BaseModel):
     files_indexed: int = 0
     files_pending: int = 0
     last_error: str | None = None
-    connector_statuses: dict[str, str] = {}  # connector_id → "scanning|idle|error"
+    connector_statuses: dict[str, str] = {}
 
 
 class HeartbeatResponse(BaseModel):
@@ -68,10 +71,10 @@ class HeartbeatResponse(BaseModel):
 
 class AgentTokenResponse(BaseModel):
     agent_id: str
-    api_key: str          # shown ONCE — store immediately
-    install_linux: str    # ready-to-run curl command
-    install_docker: str   # ready-to-run docker run command
-    install_helm: str     # ready-to-run helm command
+    api_key: str
+    install_linux: str
+    install_docker: str
+    install_helm: str
 
 
 class AgentStatus(BaseModel):
@@ -88,133 +91,132 @@ class AgentStatus(BaseModel):
 
 # ── Auth helper ───────────────────────────────────────────────────────────────
 
-def _get_agent_from_key(x_scanner_key: str | None, db: Session) -> ScannerAgent:
-    """Authenticate an agent by X-Scanner-Key header."""
+async def _get_agent_from_key(x_scanner_key: str | None, db: AsyncSession) -> ScannerAgent:
     if not x_scanner_key:
         raise HTTPException(status_code=401, detail="Missing X-Scanner-Key header")
     key_hash = hashlib.sha256(x_scanner_key.encode()).hexdigest()
-    agent = db.query(ScannerAgent).filter(
-        ScannerAgent.api_key_hash == key_hash,
-        ScannerAgent.is_active == True,
-    ).first()
+    result = await db.execute(
+        select(ScannerAgent).where(
+            ScannerAgent.api_key_hash == key_hash,
+            ScannerAgent.is_active == True,
+        ).limit(1)
+    )
+    agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=401, detail="Invalid or revoked agent key")
     return agent
 
 
-# ── Agent-facing endpoints ────────────────────────────────────────────────────
+# ── Agent-facing endpoints (X-Scanner-Key auth) ───────────────────────────────
 
 @router.get("/api/agent/config", response_model=AgentConfig)
-def get_agent_config(
+async def get_agent_config(
     x_scanner_key: str | None = Header(default=None),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Called by dgraph-agent on startup and periodically.
-    Returns the full connector config the agent should scan.
-    """
-    agent = _get_agent_from_key(x_scanner_key, db)
+    """Called by dgraph-agent on startup and periodically. Returns connector list."""
+    agent = await _get_agent_from_key(x_scanner_key, db)
 
-    # Get all connectors assigned to this agent
-    connectors = db.query(Connector).filter(
-        Connector.tenant_id == agent.tenant_id,
-        Connector.scanner_agent_id == agent.id,
-        Connector.is_active == True,
-    ).all()
-
-    connector_configs = []
-    for c in connectors:
-        connector_configs.append(ConnectorConfig(
-            id=str(c.id),
-            name=c.name,
-            connector_type=c.connector_type,
-            config=c.config or {},
-            scan_interval_minutes=_interval_minutes(c.scan_schedule),
-            enabled=c.is_active,
-        ))
+    result = await db.execute(
+        select(Connector).where(
+            Connector.tenant_id == agent.tenant_id,
+            Connector.scanner_agent_id == agent.id,
+            Connector.is_active == True,
+        )
+    )
+    connectors = result.scalars().all()
 
     cloud_url = os.getenv("APP_URL", "https://api.dgraph.ai")
 
     return AgentConfig(
-        agent_id=str(agent.id),
-        tenant_id=str(agent.tenant_id),
-        cloud_url=cloud_url,
-        connectors=connector_configs,
-        enrichment_enabled=True,
-        log_level="info",
-        max_concurrent_scans=2,
-        version_check_url=f"https://api.github.com/repos/gaineyllc/dgraphai/releases/latest",
+        agent_id    = str(agent.id),
+        tenant_id   = str(agent.tenant_id),
+        cloud_url   = cloud_url,
+        connectors  = [
+            ConnectorConfig(
+                id                    = str(c.id),
+                name                  = c.name,
+                connector_type        = c.connector_type,
+                config                = c.config or {},
+                scan_interval_minutes = 360,  # default 6h — scan_schedule field not yet in model
+                enabled               = c.is_active,
+            )
+            for c in connectors
+        ],
+        enrichment_enabled  = True,
+        log_level           = "info",
+        max_concurrent_scans= 2,
+        version_check_url   = "https://api.github.com/repos/gaineyllc/dgraphai/releases/latest",
     )
 
 
 @router.post("/api/agent/heartbeat", response_model=HeartbeatResponse)
-def agent_heartbeat(
+async def agent_heartbeat(
     body: HeartbeatRequest,
     x_scanner_key: str | None = Header(default=None),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    """
-    Called by dgraph-agent every 30 seconds.
-    Updates last_seen, file counts, and connector statuses.
-    """
-    agent = _get_agent_from_key(x_scanner_key, db)
+    """Called by dgraph-agent every 30s. Updates last_seen + stats."""
+    agent = await _get_agent_from_key(x_scanner_key, db)
 
-    # Update agent record
-    agent.last_seen_at    = datetime.now(timezone.utc)
-    agent.files_indexed   = body.files_indexed
-    agent.files_pending   = body.files_pending
-    agent.version         = body.version
-    agent.os              = body.os
-    agent.hostname        = body.hostname or agent.hostname
-    agent.last_error      = body.last_error
+    agent.last_seen_at       = datetime.now(timezone.utc)
+    agent.files_indexed      = body.files_indexed
+    agent.files_pending      = body.files_pending
+    agent.version            = body.version
+    agent.os                 = body.os
+    agent.hostname           = body.hostname or agent.hostname
+    agent.last_error         = body.last_error
     agent.connector_statuses = body.connector_statuses
 
-    db.commit()
-
-    # Pull any pending commands (reindex requests, config changes)
-    commands = _get_pending_commands(agent, db)
-
-    return HeartbeatResponse(ok=True, commands=commands)
+    await db.commit()
+    return HeartbeatResponse(ok=True, commands=[])
 
 
-# ── UI-facing endpoints ───────────────────────────────────────────────────────
+# ── UI-facing endpoints (JWT auth) ────────────────────────────────────────────
 
 @router.post("/api/agent/token", response_model=AgentTokenResponse)
-def generate_agent_token(
+async def generate_agent_token(
     name: str = "default",
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Generate a new agent API key for the current tenant.
-    The API key is shown ONCE and never stored in plaintext.
-    Called by the first-run wizard to generate the install command.
+    The API key is shown ONCE — store it immediately.
     """
     raw_key  = "dga_" + secrets.token_urlsafe(32)
     key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
 
     agent = ScannerAgent(
-        tenant_id   = current_user.tenant_id,
-        name        = name,
-        api_key_hash= key_hash,
-        is_active   = True,
-        created_by  = current_user.id,
+        tenant_id    = current_user.tenant_id,
+        name         = name,
+        api_key_hash = key_hash,
+        is_active    = True,
+        created_by   = current_user.user_id,
     )
     db.add(agent)
-    db.commit()
-    db.refresh(agent)
+    await db.commit()
+    await db.refresh(agent)
 
     cloud_url = os.getenv("APP_URL", "https://api.dgraph.ai")
 
+    # Windows PowerShell install command
+    install_windows = (
+        f"$env:DGRAPH_AGENT_API_KEY='{raw_key}'; "
+        f"$env:DGRAPH_AGENT_API_ENDPOINT='{cloud_url}'; "
+        f".\\dgraph-agent.exe"
+    )
+
     install_linux = (
-        f"curl -L {cloud_url}/install.sh | "
-        f"DGRAPH_AGENT_API_KEY={raw_key} DGRAPH_CLOUD_URL={cloud_url} bash"
+        f"DGRAPH_AGENT_API_KEY={raw_key} "
+        f"DGRAPH_AGENT_API_ENDPOINT={cloud_url} "
+        f"./dgraph-agent"
     )
 
     install_docker = (
         f"docker run -d --name dgraph-agent \\\n"
         f"  -e DGRAPH_AGENT_API_KEY={raw_key} \\\n"
-        f"  -e DGRAPH_CLOUD_URL={cloud_url} \\\n"
+        f"  -e DGRAPH_AGENT_API_ENDPOINT={cloud_url} \\\n"
         f"  -v /:/host:ro \\\n"
         f"  ghcr.io/gaineyllc/dgraph-agent:latest"
     )
@@ -226,76 +228,83 @@ def generate_agent_token(
     )
 
     return AgentTokenResponse(
-        agent_id      = str(agent.id),
-        api_key       = raw_key,
-        install_linux = install_linux,
-        install_docker= install_docker,
-        install_helm  = install_helm,
+        agent_id       = str(agent.id),
+        api_key        = raw_key,
+        install_linux  = install_linux,
+        install_docker = install_docker,
+        install_helm   = install_helm,
     )
 
 
 @router.get("/api/agents", response_model=list[AgentStatus])
-def list_agents(
+async def list_agents(
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    """List all agents registered to this tenant."""
-    agents = db.query(ScannerAgent).filter(
-        ScannerAgent.tenant_id == current_user.tenant_id,
-        ScannerAgent.is_active == True,
-    ).order_by(ScannerAgent.created_at.desc()).all()
-
+    result = await db.execute(
+        select(ScannerAgent).where(
+            ScannerAgent.tenant_id == current_user.tenant_id,
+            ScannerAgent.is_active == True,
+        ).order_by(ScannerAgent.created_at.desc())
+    )
+    agents = result.scalars().all()
     return [_agent_status(a) for a in agents]
 
 
 @router.get("/api/agents/{agent_id}", response_model=AgentStatus)
-def get_agent(
+async def get_agent(
     agent_id: str,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    agent = db.query(ScannerAgent).filter(
-        ScannerAgent.id        == agent_id,
-        ScannerAgent.tenant_id == current_user.tenant_id,
-    ).first()
+    result = await db.execute(
+        select(ScannerAgent).where(
+            ScannerAgent.id        == agent_id,
+            ScannerAgent.tenant_id == current_user.tenant_id,
+        ).limit(1)
+    )
+    agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     return _agent_status(agent)
 
 
 @router.delete("/api/agents/{agent_id}", status_code=204)
-def revoke_agent(
+async def revoke_agent(
     agent_id: str,
     current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Revoke an agent's API key. The agent will be unable to connect."""
-    agent = db.query(ScannerAgent).filter(
-        ScannerAgent.id        == agent_id,
-        ScannerAgent.tenant_id == current_user.tenant_id,
-    ).first()
+    result = await db.execute(
+        select(ScannerAgent).where(
+            ScannerAgent.id        == agent_id,
+            ScannerAgent.tenant_id == current_user.tenant_id,
+        ).limit(1)
+    )
+    agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     agent.is_active = False
-    db.commit()
+    await db.commit()
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _agent_status(agent: ScannerAgent) -> AgentStatus:
-    from datetime import timedelta
     now = datetime.now(timezone.utc)
     last_seen = agent.last_seen_at
+    if last_seen and last_seen.tzinfo is None:
+        last_seen = last_seen.replace(tzinfo=timezone.utc)
     is_online = (
         last_seen is not None and
-        (now - last_seen.replace(tzinfo=timezone.utc if last_seen.tzinfo is None else last_seen.tzinfo)) < timedelta(seconds=90)
+        (now - last_seen) < timedelta(seconds=90)
     )
     return AgentStatus(
         id                  = str(agent.id),
         name                = agent.name,
-        version             = getattr(agent, "version", "unknown"),
-        os                  = getattr(agent, "os", "unknown"),
-        hostname            = getattr(agent, "hostname", ""),
+        version             = getattr(agent, "version", "unknown") or "unknown",
+        os                  = getattr(agent, "os", "unknown") or "unknown",
+        hostname            = getattr(agent, "hostname", "") or "",
         last_seen_at        = agent.last_seen_at,
         files_indexed       = getattr(agent, "files_indexed", 0) or 0,
         connector_statuses  = getattr(agent, "connector_statuses", {}) or {},
@@ -304,14 +313,5 @@ def _agent_status(agent: ScannerAgent) -> AgentStatus:
 
 
 def _interval_minutes(schedule: str | None) -> int:
-    mapping = {
-        "1h": 60, "6h": 360, "12h": 720,
-        "24h": 1440, "48h": 2880, "weekly": 10080,
-    }
-    return mapping.get(schedule or "6h", 360)
-
-
-def _get_pending_commands(agent: ScannerAgent, db: Session) -> list[dict]:
-    """Return any pending commands queued for this agent (reindex, etc.)."""
-    # TODO: implement AgentCommand table
-    return []
+    return {"1h": 60, "6h": 360, "12h": 720, "24h": 1440,
+            "48h": 2880, "weekly": 10080}.get(schedule or "6h", 360)
