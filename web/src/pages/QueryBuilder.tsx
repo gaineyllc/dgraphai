@@ -9,6 +9,7 @@
  * URL encoding: /builder?state=<base64-encoded-builder-state>
  */
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { apiFetch } from '../lib/apiFetch'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
@@ -648,6 +649,7 @@ function fmtCount(n: number) {
   if (n >= 1_000)     return `${(n/1_000).toFixed(0)}K`
   return String(n)
 }
+
 
 
 

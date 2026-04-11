@@ -1,0 +1,275 @@
+/* ── Policies Page ───────────────────────────────────────────────── */
+.policies-page {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; min-width: 0;
+  background: var(--surface-0);
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────────── */
+.pol-tabs {
+  display: flex; align-items: center; gap: 2px;
+  padding: 0 var(--space-6); border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-1); flex-shrink: 0;
+}
+.pol-tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 12px 16px; border: none; background: none;
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: all var(--duration-micro);
+  white-space: nowrap;
+}
+.pol-tab:hover { color: var(--text-primary); }
+.pol-tab.active {
+  color: var(--color-primary-bright);
+  border-bottom-color: var(--color-primary);
+}
+
+/* ── Content area ────────────────────────────────────────────────── */
+.pol-content {
+  flex: 1; overflow-y: auto; padding: var(--space-6);
+}
+
+/* ── Section grid ────────────────────────────────────────────────── */
+.pol-section-grid {
+  display: flex; flex-direction: column; gap: var(--space-4);
+  max-width: 900px;
+}
+
+/* ── Card ────────────────────────────────────────────────────────── */
+.pol-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.pol-card-wide { max-width: 100%; }
+
+.pol-card-header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.pol-card-header h3 {
+  font-size: 15px; font-weight: 700; color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.pol-card-header p {
+  font-size: 12px; color: var(--text-tertiary);
+}
+.pol-card-footer {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+  display: flex; justify-content: flex-end;
+}
+
+/* ── Fields ──────────────────────────────────────────────────────── */
+.pol-fields { padding: var(--space-4) var(--space-5); display: flex; flex-direction: column; gap: 0; }
+.pol-field-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--space-4); padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.pol-field-row:last-child { border-bottom: none; }
+.pol-field-label { flex: 1; min-width: 0; }
+.pol-field-label > span:first-child { font-size: 13px; font-weight: 600; color: var(--text-primary); display: block; }
+.pol-field-hint { font-size: 11px; color: var(--text-tertiary); display: block; margin-top: 2px; line-height: 1.4; }
+.pol-field-control { flex-shrink: 0; min-width: 200px; }
+
+.pol-input {
+  width: 100%; padding: 7px 10px; border-radius: var(--radius-sm);
+  background: var(--surface-2); border: 1px solid var(--border-default);
+  color: var(--text-primary); font-size: 13px;
+  transition: border-color var(--duration-micro);
+}
+.pol-input:focus { border-color: var(--color-primary); outline: none; }
+
+.pol-textarea {
+  width: 100%; padding: 7px 10px; border-radius: var(--radius-sm);
+  background: var(--surface-2); border: 1px solid var(--border-default);
+  color: var(--text-primary); font-size: 12px; font-family: var(--font-mono);
+  resize: vertical; transition: border-color var(--duration-micro);
+}
+.pol-textarea:focus { border-color: var(--color-primary); outline: none; }
+
+.pol-select {
+  padding: 7px 28px 7px 10px; border-radius: var(--radius-sm);
+  background: var(--surface-2); border: 1px solid var(--border-default);
+  color: var(--text-primary); font-size: 13px; cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23938f99' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+}
+.pol-select-sm { padding: 5px 24px 5px 8px; font-size: 12px; }
+.pol-select:focus { border-color: var(--color-primary); outline: none; }
+
+.pol-input-suffix {
+  display: flex; align-items: center; gap: 8px;
+}
+.pol-input-suffix span { font-size: 12px; color: var(--text-tertiary); white-space: nowrap; }
+.pol-input-suffix .pol-input { flex: 1; }
+
+/* ── Toggle ──────────────────────────────────────────────────────── */
+.pol-toggle {
+  width: 44px; height: 24px; border-radius: 12px;
+  background: var(--surface-4); border: none; cursor: pointer;
+  position: relative; flex-shrink: 0;
+  transition: background var(--duration-micro);
+}
+.pol-toggle.on { background: var(--color-primary); }
+.pol-toggle.disabled { opacity: 0.4; cursor: not-allowed; }
+.pol-toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; transition: transform var(--duration-micro) var(--ease-spring-tight);
+}
+.pol-toggle.on .pol-toggle-thumb { transform: translateX(20px); }
+
+/* ── Banners ─────────────────────────────────────────────────────── */
+.pol-warn-banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: var(--space-4) var(--space-5) 0;
+  padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-high) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-high) 25%, transparent);
+  color: var(--color-high);
+  font-size: 12px; line-height: 1.5;
+}
+.pol-warn-banner svg { flex-shrink: 0; margin-top: 1px; }
+.pol-warn-banner strong { display: block; font-weight: 700; margin-bottom: 2px; color: var(--text-primary); }
+.pol-warn-banner p { margin: 0; color: var(--text-secondary); }
+
+.pol-info-banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: var(--space-4) var(--space-5) 0;
+  padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm);
+  background: var(--color-primary-container);
+  border: 1px solid var(--color-primary-border);
+  color: var(--text-secondary); font-size: 12px; line-height: 1.5;
+}
+.pol-info-banner svg { flex-shrink: 0; color: var(--color-primary-bright); margin-top: 1px; }
+.pol-info-banner a { color: var(--color-primary-bright); }
+.pol-info-banner code { font-family: var(--font-mono); font-size: 11px; color: var(--color-secondary); }
+
+/* ── Enrichment modes ────────────────────────────────────────────── */
+.pol-mode-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3); padding: var(--space-4) var(--space-5);
+}
+.pol-mode-card {
+  position: relative; display: flex; flex-direction: column;
+  gap: var(--space-2); padding: var(--space-4); border-radius: var(--radius-md);
+  background: var(--surface-2); border: 2px solid transparent;
+  cursor: pointer; text-align: left;
+  transition: all var(--duration-micro);
+}
+.pol-mode-card:hover { border-color: var(--border-strong); }
+.pol-mode-card.selected { border-color: var(--mc, var(--color-primary)); background: color-mix(in srgb, var(--mc) 8%, var(--surface-2)); }
+.pol-mode-icon {
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--mc, var(--color-primary)) 15%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--mc, var(--color-primary));
+}
+.pol-mode-label { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.pol-mode-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+.pol-mode-check {
+  position: absolute; top: 10px; right: 10px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--mc, var(--color-primary)); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Feature table ───────────────────────────────────────────────── */
+.pol-feature-table { padding: 0 var(--space-5); }
+.pol-feature-header {
+  display: flex; justify-content: space-between;
+  padding: 8px 0; border-bottom: 1px solid var(--border-subtle);
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-tertiary);
+}
+.pol-feature-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-4); padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: opacity var(--duration-micro);
+}
+.pol-feature-row.unavailable { opacity: 0.5; }
+.pol-feature-row:last-child { border-bottom: none; }
+.pol-feature-info { flex: 1; min-width: 0; }
+.pol-feature-name { font-size: 13px; font-weight: 600; color: var(--text-primary); display: block; }
+.pol-feature-desc { font-size: 11px; color: var(--text-tertiary); display: block; }
+.pol-feature-badge {
+  display: inline-block; margin-top: 4px; padding: 1px 6px;
+  border-radius: var(--radius-full); font-size: 10px; font-weight: 600;
+  background: var(--surface-4); color: var(--text-tertiary);
+}
+
+/* ── Permission grid ─────────────────────────────────────────────── */
+.pol-permission-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: var(--space-3); padding: var(--space-4) var(--space-5);
+}
+.pol-permission-card {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
+  background: var(--surface-2); border: 1px solid var(--border-subtle);
+}
+.pol-permission-card.destructive { border-color: color-mix(in srgb, var(--color-critical-vivid) 20%, transparent); }
+.pol-perm-icon {
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  background: var(--surface-3); display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); flex-shrink: 0;
+}
+.pol-perm-info { flex: 1; min-width: 0; }
+.pol-perm-name { font-size: 13px; font-weight: 600; color: var(--text-primary); display: block; }
+.pol-perm-desc { font-size: 11px; color: var(--text-tertiary); }
+
+/* ── Connector list ──────────────────────────────────────────────── */
+.pol-connector-list { padding: var(--space-2) var(--space-5); }
+.pol-connector-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-4);
+}
+.pol-connector-row:last-child { border-bottom: none; }
+.pol-connector-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pol-connector-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.pol-connector-type { font-size: 11px; color: var(--text-tertiary); }
+
+/* ── Roadmap ─────────────────────────────────────────────────────── */
+.pol-roadmap-list { padding: var(--space-2) var(--space-5); }
+.pol-roadmap-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px; color: var(--text-primary);
+}
+.pol-roadmap-row:last-child { border-bottom: none; }
+.pol-roadmap-badge {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; padding: 2px 8px; border-radius: var(--radius-full);
+}
+.pol-roadmap-badge.planned { background: var(--surface-3); color: var(--text-tertiary); }
+.pol-roadmap-badge.in-progress { background: var(--color-secondary-container); color: var(--color-secondary-bright); }
+
+/* ── Platform sections ───────────────────────────────────────────── */
+.pol-platform-tabs { display: flex; flex-direction: column; gap: 1px; }
+.pol-platform-section { border-bottom: 1px solid var(--border-subtle); }
+.pol-platform-section:last-child { border-bottom: none; }
+.pol-platform-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: var(--space-4) var(--space-5); width: 100%;
+  background: none; border: none; cursor: pointer;
+  font-size: 14px; font-weight: 700; color: var(--text-primary);
+  text-align: left; transition: background var(--duration-micro);
+}
+.pol-platform-header:hover { background: var(--state-hover); }
+.pol-platform-icon { font-size: 18px; }
+.pol-platform-name { flex: 1; }
+.pol-platform-body { padding: 0 var(--space-5) var(--space-4); }
+.pol-platform-note {
+  margin-top: var(--space-3); padding: var(--space-3);
+  background: var(--surface-2); border-radius: var(--radius-sm);
+  font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono);
+  word-break: break-all; line-height: 1.5;
+}

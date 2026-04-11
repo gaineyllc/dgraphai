@@ -58,7 +58,7 @@ function buildCypher(filters: FilterState): string {
     const conditions: string[] = []
 
     if (t === 'File') {
-      if (category)             conditions.push(`f.category = '${category}'`)
+      if (category)             conditions.push(`f.file_category = '${category}'`)
       if (extension)            conditions.push(`f.extension = '${extension}'`)
       if (sizeMin)              conditions.push(`f.size >= ${Number(sizeMin) * 1024}`)
       if (sizeMax)              conditions.push(`f.size <= ${Number(sizeMax) * 1024}`)
@@ -336,11 +336,32 @@ export function ExplorePage() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ cypher }),
       }).then(r => r.json()),
-    onSuccess: (data) => {
-      setGraphData(data)
-      // Count nodes
-      const nodes = data?.nodes ?? data?.elements?.nodes ?? []
-      setResultCount(Array.isArray(nodes) ? nodes.length : 0)
+    onSuccess: (rawRows: any[]) => {
+      // Transform flat row objects into Cytoscape node/edge format
+      const rows = Array.isArray(rawRows) ? rawRows : []
+      const nodeMap = new Map<string, any>()
+      const edges: any[] = []
+
+      rows.forEach((row, idx) => {
+        // Each row may have one or more node properties
+        Object.entries(row).forEach(([key, val]: [string, any]) => {
+          if (val && typeof val === 'object' && (val.id || val.path)) {
+            const nodeId = String(val.id ?? val.path ?? `node-${idx}`)
+            if (!nodeMap.has(nodeId)) {
+              nodeMap.set(nodeId, {
+                id:    nodeId,
+                label: key.replace(/^[a-z]\./, '').replace(/_/g, ' '),
+                name:  val.name ?? val.id ?? nodeId,
+                props: val,
+              })
+            }
+          }
+        })
+      })
+
+      const nodes = Array.from(nodeMap.values())
+      setGraphData({ nodes, edges })
+      setResultCount(nodes.length)
     },
   })
 
@@ -411,3 +432,4 @@ export function ExplorePage() {
 }
 
 export default ExplorePage
+

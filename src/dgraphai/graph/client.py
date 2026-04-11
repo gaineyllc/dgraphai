@@ -37,13 +37,34 @@ class GraphClient:
     async def __aexit__(self, *_: Any) -> None:
         await self.close()
 
+    @staticmethod
+    def _serialize(val: Any) -> Any:
+        """Recursively convert Neo4j types to plain Python types."""
+        from neo4j.graph import Node, Relationship, Path
+        if isinstance(val, Node):
+            return {"id": val.element_id, "labels": list(val.labels), **dict(val)}
+        if isinstance(val, Relationship):
+            return {"id": val.element_id, "type": val.type, **dict(val)}
+        if isinstance(val, Path):
+            return {"nodes": [GraphClient._serialize(n) for n in val.nodes],
+                    "edges": [GraphClient._serialize(r) for r in val.relationships]}
+        if isinstance(val, dict):
+            return {k: GraphClient._serialize(v) for k, v in val.items()}
+        if isinstance(val, (list, tuple)):
+            return [GraphClient._serialize(v) for v in val]
+        return val
+
     async def query(
         self, cypher: str, params: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
-        """Execute a Cypher query and return results as plain dicts."""
+        """Execute a Cypher query and return results as plain Python dicts."""
         async with self._driver.session() as session:
             result = await session.run(cypher, params or {})
-            return [dict(record) async for record in result]
+            rows = []
+            async for record in result:
+                row = {k: self._serialize(v) for k, v in record.items()}
+                rows.append(row)
+            return rows
 
     async def query_one(
         self, cypher: str, params: dict[str, Any] | None = None

@@ -145,17 +145,19 @@ async def list_inventory(
     Top-level inventory groups with live counts on every category.
     Returns only top-level items; subcategories are loaded on drill-down.
     """
-    backend = await _get_backend(auth.tenant_id, db)
+    # Use the global graph client (already connected at startup) for all counts
+    from src.dgraphai.graph.client import get_graph_client
+    gclient = get_graph_client()
     groups  = get_by_group()
+    tid_str = str(auth.tenant_id)
 
     async def count_cat(cat):
         try:
             cq   = _count_cypher(cat.cypher)
-            async with backend:
-                rows = await backend.query(cq, {"tid": str(auth.tenant_id)}, auth.tenant_id)
-                return rows[0].get("total", 0) if rows else 0
+            rows = await gclient.query(cq, {"tid": tid_str})
+            return rows[0].get("total", 0) if rows else 0
         except Exception:
-            return None
+            return 0
 
     # Flatten all top-level cats across groups for parallel counting
     top_cats = [cat for cats in groups.values() for cat in cats]
@@ -229,26 +231,26 @@ async def get_filtered_nodes(
     if not cat:
         raise HTTPException(status_code=404, detail=f"Category {category_id!r} not found")
 
+    from src.dgraphai.graph.client import get_graph_client
+    gclient = get_graph_client()
+
     filters   = body.get("filters", [])
     base_cypher = _apply_attribute_filters(cat.cypher, filters)
     tid         = str(auth.tenant_id)
     skip        = page * page_size
-    backend     = await _get_backend(auth.tenant_id, db)
 
     import asyncio as _asyncio
     async def get_count():
         try:
-            async with backend:
-                rows = await backend.query(_count_cypher(base_cypher), {"tid": tid}, auth.tenant_id)
-                return rows[0].get("total", 0) if rows else 0
-        except Exception: return None
+            rows = await gclient.query(_count_cypher(base_cypher), {"tid": tid})
+            return rows[0].get("total", 0) if rows else 0
+        except Exception: return 0
 
     async def get_nodes():
         try:
             pq = _cypher_with_pagination(base_cypher, skip, page_size)
-            async with backend:
-                rows = await backend.query(pq, {"tid": tid}, auth.tenant_id)
-                return [_extract_node(r) for r in rows]
+            rows = await gclient.query(pq, {"tid": tid})
+            return [_extract_node(r) for r in rows]
         except Exception: return []
 
     total, nodes = await _asyncio.gather(get_count(), get_nodes())

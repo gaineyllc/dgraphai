@@ -31,6 +31,7 @@ const InventoryPage    = lazy(() => import('./pages/InventoryPage').then(m => ({
 const UsagePage        = lazy(() => import('./pages/UsagePage').then(m => ({ default: m.UsagePage })))
 const SettingsPage     = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const AuditLogPage     = lazy(() => import('./pages/AuditLogPage').then(m => ({ default: m.AuditLogPage })))
+const PoliciesPage   = lazy(() => import('./pages/PoliciesPage').then(m => ({ default: m.PoliciesPage })))
 const GraphDiffPage    = lazy(() => import('./pages/GraphDiffPage').then(m => ({ default: m.GraphDiffPage })))
 const NotFoundPage     = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })))
 const LegalPage        = lazy(() => import('./pages/LegalPage').then(m => ({ default: m.LegalPage })))
@@ -111,6 +112,7 @@ function AppShell() {
             <Route path="/usage"      element={<UsagePage />} />
             <Route path="/settings"   element={<SettingsPage />} />
             <Route path="/audit"      element={<AuditLogPage />} />
+            <Route path="/policies" element={<PoliciesPage />} />
             <Route path="/diff"       element={<GraphDiffPage />} />
             <Route path="*"           element={<NotFoundPage />} />
           </Routes>
@@ -135,3 +137,4 @@ export default function App() {
     </QueryClientProvider>
   )
 }
+
