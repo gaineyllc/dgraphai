@@ -11,6 +11,8 @@
 import { useState, useCallback, useRef } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { apiFetch } from '../lib/apiFetch'
+import { NodeTooltipCard } from '../components/NodeTooltipCard'
+import { NodeDrawer } from '../components/NodeDrawer'
 import { GraphCanvas } from '../components/GraphCanvas'
 import {
   Network, ChevronDown, ChevronRight,
@@ -327,6 +329,8 @@ export function ExplorePage() {
   })
   const [graphData,   setGraphData]   = useState<any>(null)
   const [selectedNode, setSelected]   = useState<any>(null)
+  const [tooltipPos,   setTooltipPos]  = useState<{ x: number; y: number } | null>(null)
+  const [drawerOpen,   setDrawerOpen]  = useState(false)
   const [resultCount,  setResultCount] = useState<number | null>(null)
 
   const exploreMutation = useMutation({
@@ -372,8 +376,10 @@ export function ExplorePage() {
     exploreMutation.mutate(cypher)
   }, [filters, exploreMutation])
 
-  const handleNodeClick = useCallback((node: any) => {
+  const handleNodeClick = useCallback((node: any, pos?: { x: number; y: number }) => {
     setSelected(node)
+    setTooltipPos(pos ?? null)
+    setDrawerOpen(false)
   }, [])
 
   const isEmpty = !graphData && !exploreMutation.isLoading
@@ -410,6 +416,7 @@ export function ExplorePage() {
           <GraphCanvas
             data={graphData}
             onNodeClick={handleNodeClick}
+            onNodeClickPos={(node, pos) => handleNodeClick(node, pos)}
           />
         ) : null}
 
@@ -421,12 +428,46 @@ export function ExplorePage() {
         )}
       </div>
 
-      {selectedNode && (
-        <NodeDetailPanel
-          node={selectedNode}
-          onClose={() => setSelected(null)}
-        />
-      )}
+      {/* Anchored tooltip — click outside to dismiss */}
+      <AnimatePresence>
+        {selectedNode && tooltipPos && !drawerOpen && (
+          <NodeTooltipCard
+            node={selectedNode}
+            position={tooltipPos}
+            onClose={() => { setSelected(null); setTooltipPos(null) }}
+            onDetails={() => setDrawerOpen(true)}
+            onExpand={() => {
+              // TODO: load 1-hop neighbors
+              setSelected(null); setTooltipPos(null)
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Full property drawer — resizable, slides in from right */}
+      <AnimatePresence>
+        {selectedNode && drawerOpen && (
+          <NodeDrawer
+            node={selectedNode}
+            onClose={() => { setDrawerOpen(false); setSelected(null); setTooltipPos(null) }}
+            onExplore={() => { setDrawerOpen(false) }}
+            onFindSimilar={(node) => {
+              const cat = (node.props ?? node).file_category
+              const ext = (node.props ?? node).extension
+              const newFilters = { ...filters, category: cat ?? '', extension: ext ?? '' }
+              setFilters(newFilters)
+              setDrawerOpen(false)
+              setSelected(null)
+              setTooltipPos(null)
+              // Auto-run explore with these filters
+              setTimeout(() => {
+                const cypher = buildCypher(newFilters)
+                if (cypher) exploreMutation.mutate(cypher)
+              }, 100)
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

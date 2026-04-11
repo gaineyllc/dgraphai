@@ -1,0 +1,12 @@
+2026-04-11T19:38:26.501-0400	[34mINFO[0m	dgraph-agent/main.go:75	dgraph-agent starting	{"version": "0.2.0", "commit": "none", "os": "windows", "arch": "amd64", "api_endpoint": "http://localhost:8001"}
+2026-04-11T19:38:26.529-0400	[34mINFO[0m	dgraph-agent/main.go:110	fetching connector config from platform...
+2026-04-11T19:38:26.553-0400	[34mINFO[0m	platform/client.go:137	fetched config from platform	{"connectors": 1, "tenant_id": "dc31bec1-248a-4ede-a9ec-a2fd61ad2ad2"}
+2026-04-11T19:38:26.554-0400	[34mINFO[0m	dgraph-agent/main.go:131	loaded connector config from platform	{"connectors": 1, "agent_id": "a0dde625-bf0c-4f35-9931-f65f001a77ca"}
+2026-04-11T19:38:26.568-0400	[34mINFO[0m	dgraph-agent/main.go:158	agent running	{"scan_interval": 300, "health": "127.0.0.1:9090"}
+2026-04-11T19:38:26.568-0400	[34mINFO[0m	dgraph-agent/main.go:253	starting scan	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "type": "local", "name": "Workspace"}
+2026-04-11T19:38:26.569-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775950706569470500", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "started"}
+2026-04-11T19:43:18.326-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775950706569470500", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "completed"}
+2026-04-11T19:43:18.327-0400	[34mINFO[0m	sync/client.go:151	Scan complete	{"connector": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "files": 11775, "duration": 291.7568098, "status": "completed"}
+2026-04-11T19:43:18.327-0400	[34mINFO[0m	dgraph-agent/main.go:267	scan complete	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "files": 11775, "duration": 291.7568098}
+2026-04-11T19:43:26.585-0400	[34mINFO[0m	dgraph-agent/main.go:253	starting scan	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "type": "local", "name": "Workspace"}
+2026-04-11T19:43:26.585-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775951006585184800", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "started"}

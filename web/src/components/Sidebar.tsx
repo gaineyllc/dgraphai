@@ -37,6 +37,7 @@ const NAV_PRIMARY = [
   { to: '/inventory',  icon: LayoutGrid,      label: 'Inventory'  },
   { to: '/security',   icon: Shield,          label: 'Security'   },
   { to: '/connectors', icon: PlugZap,         label: 'Connectors' },
+  { to: '/agents',     icon: Server,        label: 'Agents'      },
 ]
 
 const NAV_SECONDARY = [
@@ -158,4 +159,5 @@ function SidebarItem({
     </NavLink>
   )
 }
+
 

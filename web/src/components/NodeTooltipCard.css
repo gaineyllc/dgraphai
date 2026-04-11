@@ -1,0 +1,76 @@
+/* ── NodeTooltipCard — floating anchored tooltip ─────────────────── */
+.ntc-card {
+  position: fixed;
+  z-index: var(--z-tooltip, 1500);
+  width: 280px;
+  background: var(--surface-3, #1a1a30);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: var(--shadow-lg, 0 8px 32px rgba(0,0,0,.6)),
+              0 0 0 1px rgba(255,255,255,.06);
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+}
+.ntc-card.ntc-dragging { cursor: grabbing; box-shadow: var(--shadow-lg), 0 0 0 2px var(--color-primary-border); }
+
+/* ── Header ──────────────────────────────────────────────────────── */
+.ntc-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 12px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.ntc-icon {
+  width: 28px; height: 28px; border-radius: var(--radius-sm, 8px);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ntc-title-group { flex: 1; min-width: 0; }
+.ntc-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-tertiary); }
+.ntc-name { font-size: 13px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ntc-close {
+  width: 22px; height: 22px; border-radius: 50%; background: none; border: none;
+  color: var(--text-tertiary); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all var(--duration-micro, 150ms);
+}
+.ntc-close:hover { background: var(--state-hover); color: var(--text-primary); }
+
+/* ── Properties ──────────────────────────────────────────────────── */
+.ntc-props {
+  padding: 8px 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.ntc-prop {
+  display: flex; align-items: baseline; gap: 6px; min-width: 0;
+}
+.ntc-prop-path { align-items: flex-start; }
+.ntc-prop-key {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-tertiary);
+  flex-shrink: 0; width: 68px;
+}
+.ntc-prop-val {
+  font-size: 12px; color: var(--text-primary); min-width: 0;
+}
+.ntc-mono { font-family: var(--font-mono, monospace); font-size: 11px; }
+.ntc-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+/* ── Actions ─────────────────────────────────────────────────────── */
+.ntc-actions {
+  display: flex; gap: 6px; padding: 8px 12px 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+.ntc-action-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 6px 10px; border-radius: var(--radius-sm, 8px);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--border-default);
+  background: var(--surface-2); color: var(--text-secondary);
+  transition: all var(--duration-micro, 150ms);
+}
+.ntc-action-btn:hover { border-color: var(--color-primary-border); color: var(--color-primary-bright); background: var(--state-hover); }
+.ntc-action-primary {
+  background: var(--color-primary-container);
+  border-color: var(--color-primary-border);
+  color: var(--color-primary-bright);
+}
+.ntc-action-primary:hover { background: color-mix(in srgb, var(--color-primary-container) 85%, var(--color-primary) 15%); }

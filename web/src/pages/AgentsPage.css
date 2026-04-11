@@ -1,0 +1,186 @@
+/* ── Agents page ─────────────────────────────────────────────────── */
+.agents-page {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; min-width: 0; background: var(--surface-0);
+}
+
+/* ── Summary banner ──────────────────────────────────────────────── */
+.agents-summary {
+  display: flex; gap: 0; flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+.agents-summary-stat {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-right: 1px solid var(--border-subtle);
+  font-size: 13px; color: var(--text-secondary);
+}
+.agents-summary-stat strong { font-size: 20px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.agents-summary-stat svg { color: var(--text-tertiary); }
+.text-green { color: var(--color-success) !important; }
+
+/* ── Layout ──────────────────────────────────────────────────────── */
+.agents-layout {
+  flex: 1; display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0; overflow: hidden;
+}
+.agents-col {
+  display: flex; flex-direction: column; gap: var(--space-3);
+  padding: var(--space-5); overflow-y: auto;
+  border-right: 1px solid var(--border-subtle);
+}
+.agents-col:last-child { border-right: none; }
+.agents-col-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.agents-col-header h2 { font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.count-badge {
+  font-size: 11px; font-weight: 700; padding: 1px 6px;
+  border-radius: var(--radius-full); background: var(--surface-3); color: var(--text-secondary);
+}
+
+/* ── Agent card ──────────────────────────────────────────────────── */
+.agent-card {
+  background: var(--surface-1); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); padding: var(--space-4);
+  display: flex; flex-direction: column; gap: 10px;
+  transition: border-color var(--duration-micro);
+}
+.agent-card.online  { border-left: 2px solid var(--color-success); }
+.agent-card.offline { border-left: 2px solid var(--border-default); opacity: 0.8; }
+
+.agent-card-header { display: flex; align-items: center; gap: 10px; }
+.agent-status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: var(--text-disabled);
+}
+.agent-card.online .agent-status-dot { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
+
+.agent-info { flex: 1; min-width: 0; }
+.agent-name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.agent-meta { display: flex; gap: 8px; font-size: 11px; color: var(--text-tertiary); }
+.agent-os { text-transform: capitalize; }
+.agent-version { color: var(--text-disabled); }
+
+.agent-online-badge {
+  display: flex; align-items: center; gap: 4px; padding: 3px 8px;
+  border-radius: var(--radius-full); font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.agent-online-badge.on  { background: var(--color-success-dim); color: var(--color-success); }
+.agent-online-badge.off { background: var(--surface-3); color: var(--text-tertiary); }
+
+.agent-stats { display: flex; gap: 16px; }
+.agent-stat { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+
+.agent-connectors { display: flex; gap: 6px; flex-wrap: wrap; }
+.agent-conn-badge {
+  padding: 2px 8px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.agent-conn-badge.scanning { background: var(--color-primary-container); color: var(--color-primary-bright); }
+.agent-conn-badge.idle     { background: var(--surface-3); color: var(--text-tertiary); }
+.agent-conn-badge.error    { background: color-mix(in srgb, var(--color-critical-vivid) 12%, transparent); color: var(--color-critical); }
+
+.agent-actions { display: flex; justify-content: flex-end; }
+
+/* ── Fleet card ──────────────────────────────────────────────────── */
+.fleet-card {
+  background: var(--surface-1); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); padding: var(--space-4);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.fleet-card.status-healthy  { border-left: 2px solid var(--color-success); }
+.fleet-card.status-degraded { border-left: 2px solid var(--color-high); }
+.fleet-card.status-offline  { border-left: 2px solid var(--color-critical); }
+
+.fleet-header { display: flex; align-items: center; gap: 10px; }
+.fleet-status-indicator {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: var(--text-disabled);
+}
+.status-healthy  .fleet-status-indicator { background: var(--color-success); }
+.status-degraded .fleet-status-indicator { background: var(--color-high); }
+.status-offline  .fleet-status-indicator { background: var(--color-critical); }
+
+.fleet-info { flex: 1; min-width: 0; }
+.fleet-name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.fleet-meta { font-size: 11px; color: var(--text-tertiary); }
+.fleet-desc { font-size: 12px; color: var(--text-secondary); }
+.fleet-strategy { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-tertiary); }
+
+.fleet-status-badge {
+  padding: 2px 8px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0;
+}
+.fleet-status-badge.healthy  { background: var(--color-success-dim); color: var(--color-success); }
+.fleet-status-badge.degraded { background: var(--color-high-dim); color: var(--color-high); }
+.fleet-status-badge.offline  { background: var(--color-critical-dim); color: var(--color-critical); }
+.fleet-status-badge.unknown  { background: var(--surface-3); color: var(--text-tertiary); }
+
+.fleet-agent-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.fleet-agent-pill {
+  padding: 2px 8px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700;
+}
+.fleet-agent-pill.online  { background: var(--color-success-dim); color: var(--color-success); }
+.fleet-agent-pill.offline { background: var(--surface-3); color: var(--text-tertiary); }
+
+.fleet-mesh-toggle {
+  display: flex; align-items: center; gap: 6px; background: none; border: none;
+  font-size: 12px; color: var(--color-primary-bright); cursor: pointer; padding: 0;
+}
+.fleet-mesh-toggle .rotated { transform: rotate(90deg); }
+
+.fleet-mesh-panel { background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px; }
+
+/* ── Mesh SVG ────────────────────────────────────────────────────── */
+.fleet-mesh-svg { width: 100%; max-width: 240px; display: block; margin: 0 auto; }
+.fleet-mesh-empty {
+  display: flex; align-items: center; gap: 8px; justify-content: center;
+  padding: 16px; font-size: 12px; color: var(--text-tertiary);
+}
+
+/* ── Fleet info card ─────────────────────────────────────────────── */
+.fleet-info-card {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-primary-container);
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-md); font-size: 12px;
+}
+.fleet-info-card svg { color: var(--color-primary-bright); flex-shrink: 0; margin-top: 1px; }
+.fleet-info-card strong { display: block; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+.fleet-info-card p { color: var(--text-secondary); margin: 0; line-height: 1.5; }
+
+/* ── Modal ───────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: var(--z-modal, 800);
+}
+.modal-card {
+  background: var(--surface-3); border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl); width: min(480px, calc(100vw - 32px));
+  box-shadow: var(--shadow-lg);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--border-subtle);
+}
+.modal-header h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.modal-close { background: none; border: none; cursor: pointer; color: var(--text-tertiary); font-size: 16px; }
+.modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 20px; border-top: 1px solid var(--border-subtle);
+}
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+.form-field label { font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+.agent-checklist { display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto; }
+.agent-check-row {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-primary);
+  cursor: pointer; padding: 6px 8px; border-radius: var(--radius-xs);
+  transition: background var(--duration-micro);
+}
+.agent-check-row:hover { background: var(--state-hover); }
+.agent-check-row input { accent-color: var(--color-primary); }
+.agents-list, .fleets-list { display: flex; flex-direction: column; gap: var(--space-3); }

@@ -207,10 +207,30 @@ async def sync_delta(
     edges_merged = 0
     errors = 0
 
+    # Use deduplication for File nodes (sha256-based merge with paths[] array)
+    from src.dgraphai.graph.dedup import bulk_upsert_query
+    from src.dgraphai.graph.client import get_graph_client
+    gclient = get_graph_client()
+
+    file_nodes = [n for n in chunk.nodes if n.get("type") == "File" or (n.get("labels") or [None])[0] == "File"]
+    other_nodes = [n for n in chunk.nodes if n not in file_nodes]
+    agent_id_str = str(scanner.id)
+
+    # Batch upsert File nodes with deduplication
+    if file_nodes:
+        try:
+            node_props_list = [n.get("props", n) for n in file_nodes]
+            cypher, params = bulk_upsert_query(node_props_list, agent_id_str, chunk.tenant_id)
+            rows = await gclient.query(cypher, params)
+            nodes_merged += rows[0].get("merged", 0) if rows else 0
+        except Exception as e:
+            errors += len(file_nodes)
+
+    # Non-File nodes use standard upsert
     async with backend:
         tenant_uuid = _uuid.UUID(chunk.tenant_id)
 
-        for node in chunk.nodes:
+        for node in other_nodes:
             try:
                 if node["op"] == "upsert":
                     await backend.upsert_node(
