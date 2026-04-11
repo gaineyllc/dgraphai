@@ -10,6 +10,7 @@
  */
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { apiFetch } from '../lib/apiFetch'
 import { motion, AnimatePresence, Reorder } from 'framer-motion'
 import CodeMirror from '@uiw/react-codemirror'
 import { sql } from '@codemirror/lang-sql'

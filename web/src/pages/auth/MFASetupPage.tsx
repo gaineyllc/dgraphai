@@ -4,6 +4,7 @@
  * Shows QR code, secret, backup codes, and confirmation step.
  */
 import { useState } from 'react'
+import { apiFetch } from '../../lib/apiFetch'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { ShieldCheck, Copy, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
@@ -155,5 +156,6 @@ export function MFASetupPage({ onDone }: { onDone?: () => void }) {
     </motion.div>
   )
 }
+
 
 

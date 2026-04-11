@@ -4,3 +4,30 @@ INFO:     127.0.0.1:50218 - "POST /api/auth/signup HTTP/1.1" 201 Created
 INFO:     127.0.0.1:50220 - "GET /api/connectors/types HTTP/1.1" 200 OK
 INFO:     127.0.0.1:50222 - "POST /api/auth/signup HTTP/1.1" 201 Created
 INFO:     127.0.0.1:50225 - "GET /api/connectors/types HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50227 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50229 - "GET /docs HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50231 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50233 - "POST /api/auth/signup HTTP/1.1" 201 Created
+INFO:     127.0.0.1:50235 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50237 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50239 - "GET /api/connectors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50241 - "POST /api/connectors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50243 - "GET /api/connectors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50246 - "GET /api/connectors/ca57ee50-8394-483f-a2f4-3fc7b43aca6e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50248 - "PATCH /api/connectors/ca57ee50-8394-483f-a2f4-3fc7b43aca6e/schedule HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53883 - "GET /api/connectors/types HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53885 - "POST /api/agent/token?name=e2e-agent HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53887 - "GET /api/agents HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53889 - "GET /api/schema HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53891 - "GET /api/inventory HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53922 - "POST /graphql HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53924 - "POST /graphql HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53926 - "GET /api/security/stats HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53928 - "GET /api/alerts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53930 - "GET /api/audit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53932 - "POST /api/v1/proxy/sync HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53934 - "POST /api/v1/proxy/heartbeat HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:53938 - "GET /api/settings/tenant HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53941 - "GET /api/alerts/notifications HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53943 - "GET /api/usage/limits HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53946 - "DELETE /api/connectors/ca57ee50-8394-483f-a2f4-3fc7b43aca6e HTTP/1.1" 200 OK

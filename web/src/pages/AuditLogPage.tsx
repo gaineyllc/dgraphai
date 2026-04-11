@@ -5,6 +5,7 @@
  */
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { apiFetch } from '../lib/apiFetch'
 import { motion } from 'framer-motion'
 import { Shield, Search, Download, RefreshCw, ChevronDown, User, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 import './AuditLogPage.css'
@@ -184,6 +185,7 @@ export function AuditLogPage() {
     </div>
   )
 }
+
 
 
 

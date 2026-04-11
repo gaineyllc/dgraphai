@@ -1,0 +1,166 @@
+/* ── Skeleton shimmer ─────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2, #141424) 25%,
+    var(--surface-3, #1a1a30) 50%,
+    var(--surface-2, #141424) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ── Skeleton card ────────────────────────────────────────────────── */
+.skeleton-card {
+  background: var(--surface-1, #0f0f1a);
+  border: 1px solid var(--border-default, rgba(255,255,255,.10));
+  border-radius: var(--radius-md, 12px);
+  padding: var(--space-4, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Skeleton table ───────────────────────────────────────────────── */
+.skeleton-table {
+  border: 1px solid var(--border-subtle, rgba(255,255,255,.06));
+  border-radius: var(--radius-md, 12px);
+  overflow: hidden;
+  background: var(--surface-1, #0f0f1a);
+}
+.skeleton-table-header {
+  display: flex;
+  gap: 24px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+.skeleton-table-row {
+  display: flex;
+  gap: 24px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  align-items: center;
+}
+.skeleton-table-row:last-child { border-bottom: none; }
+
+/* ── Empty state ──────────────────────────────────────────────────── */
+.empty-state-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4, 16px);
+  padding: var(--space-12, 48px) var(--space-6, 24px);
+  text-align: center;
+}
+.empty-state-wrap.compact {
+  padding: var(--space-6, 24px);
+  gap: var(--space-3, 12px);
+}
+.empty-state-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg, 16px);
+  background: var(--surface-2, #141424);
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary, #55557a);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-primary, #7c5cfc) 5%, transparent);
+}
+.empty-state-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #eaeaf8);
+}
+.empty-state-desc {
+  font-size: 13px;
+  color: var(--text-secondary, #8888b0);
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+/* ── Error state ──────────────────────────────────────────────────── */
+.error-state-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3, 12px);
+  padding: var(--space-12, 48px) var(--space-6, 24px);
+  text-align: center;
+}
+.error-state-wrap.compact { padding: var(--space-6, 24px); }
+.error-state-icon {
+  color: var(--color-critical, #f04545);
+  opacity: 0.8;
+}
+.error-state-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #eaeaf8);
+}
+.error-state-desc {
+  font-size: 12px;
+  color: var(--text-secondary, #8888b0);
+  max-width: 320px;
+  font-family: var(--font-mono);
+}
+
+/* ── Page header ──────────────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4, 16px);
+  padding: var(--space-5, 20px) var(--space-6, 24px) 0;
+  flex-shrink: 0;
+}
+.page-header-left { display: flex; flex-direction: column; gap: 3px; }
+.page-header-title-row { display: flex; align-items: center; gap: 10px; }
+.page-header-title {
+  font-size: var(--text-headline, 20px);
+  font-weight: 700;
+  color: var(--text-primary, #eaeaf8);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.page-header-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-container);
+  color: var(--color-primary-bright);
+  border: 1px solid var(--color-primary-border);
+}
+.page-header-sub {
+  font-size: 12px;
+  color: var(--text-tertiary, #55557a);
+}
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  flex-shrink: 0;
+}
+
+/* ── Page shell ───────────────────────────────────────────────────── */
+.page-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-0, #09080c);
+  min-width: 0; /* prevent overflow */
+}

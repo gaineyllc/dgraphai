@@ -12,6 +12,7 @@
  */
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { apiFetch } from '../lib/apiFetch'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import {
@@ -57,10 +58,11 @@ export function InventoryPage() {
 function InventoryRoot({ onNavigate }) {
   const navigate = useNavigate()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['inventory'],
     queryFn:  api.list,
     refetchInterval: 60_000,
+    retry: 2,
   })
 
   const groups: Record<string, any[]> = data?.groups ?? {}
@@ -97,7 +99,18 @@ function InventoryRoot({ onNavigate }) {
       {/* Natural language search */}
       <NLSearchBar onResult={handleNLResult} onNavigate={onNavigate} />
 
-      {isLoading ? <LoadingSkeleton /> : (
+      {isError ? (
+        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ textAlign:'center', color:'var(--text-secondary)' }}>
+            <AlertCircle size={32} style={{ color:'var(--color-critical,#f04545)', marginBottom:12 }} />
+            <p style={{ fontWeight:600, color:'var(--text-primary)', marginBottom:4 }}>Failed to load inventory</p>
+            <p style={{ fontSize:12, marginBottom:16 }}>Check that the API server is running</p>
+            <button className="btn btn-secondary btn-sm" onClick={() => refetch()}>
+              <RefreshCw size={13} /> Retry
+            </button>
+          </div>
+        </div>
+      ) : isLoading ? <LoadingSkeleton /> : (
         <div className="inv-groups">
           {Object.entries(filtered).map(([group, cats]) => {
             const groupTotal = cats.reduce((s, c) => s + (c.count ?? 0), 0)
@@ -648,6 +661,7 @@ function fmtSize(b) {
   if (b >= 1e3) return `${(b/1e3).toFixed(0)} KB`
   return `${b} B`
 }
+
 
 
 

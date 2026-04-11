@@ -1,0 +1,7 @@
+[33m[vite:css][postcss] @import must precede all other statements (besides @charset or empty @layer)
+964 |    --z-tooltip: 1500;
+965 |  }
+966 |  @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&displa...
+    |  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+967 |  *, *::before, *::after {
+968 |    box-sizing: border-box;[39m

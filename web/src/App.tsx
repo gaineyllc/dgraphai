@@ -2,9 +2,10 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Sidebar }      from './components/Sidebar'
-import { AuthProvider } from './components/AuthProvider'
-import { AuthGuard }    from './components/AuthGuard'
+import { Sidebar }           from './components/Sidebar'
+import { AuthProvider }      from './components/AuthProvider'
+import { AuthGuard }         from './components/AuthGuard'
+import { PageErrorBoundary } from './components/PageShell'
 
 // ── Auth pages — loaded immediately (small, needed before app shell) ──────────
 import { LoginPage }          from './pages/auth/LoginPage'
@@ -77,9 +78,10 @@ function AppShell() {
   const isAuthPage = AUTH_ONLY_PATHS.some(p => location.pathname.startsWith(p))
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div style={{ display:'flex', height:'100dvh', overflow:'hidden', background:'var(--surface-0,#09080c)' }}>
       {!isAuthPage && <Sidebar />}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minWidth:0 }}>
+        <PageErrorBoundary name="App">
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Auth — not lazy, needed immediately */}
@@ -110,6 +112,7 @@ function AppShell() {
             <Route path="*"           element={<NotFoundPage />} />
           </Routes>
         </Suspense>
+        </PageErrorBoundary>
       </main>
     </div>
   )

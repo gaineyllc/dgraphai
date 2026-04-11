@@ -5,6 +5,7 @@
  * and a tier breakdown explanation.
  */
 import { useQuery } from '@tanstack/react-query'
+import { apiFetch } from '../lib/apiFetch'
 import { motion } from 'framer-motion'
 import {
   Database, Zap, Brain, Users, GitBranch,
@@ -323,6 +324,7 @@ function fmt(n: number) {
   if (n >= 1_000)     return `${(n/1_000).toFixed(1)}K`
   return n.toLocaleString()
 }
+
 
 
 
