@@ -1,16 +1,22 @@
 version: "3.9"
 
-# dgraph.ai — local development stack
-# Start everything: docker compose up -d
-# API:      http://localhost:8000
-# Frontend: http://localhost:5173 (run: cd web && npm run dev)
-# Neo4j:    http://localhost:7474  (neo4j / fsgraph-local)
-# Redis:    localhost:6379
-# Postgres: localhost:5432
+# dgraph.ai - local development stack
+#
+# Start everything:   docker compose up -d
+# Core only (faster): docker compose up -d postgres neo4j redis
+#
+# URLs:
+#   API:          http://localhost:8000
+#   Frontend:     http://localhost:5173  (cd web && npm run dev)
+#   Neo4j:        http://localhost:7474  (neo4j / fsgraph-local)
+#   Keycloak:     http://localhost:8080  (admin / admin)
+#   Meilisearch:  http://localhost:7700
+#   Redis:        localhost:6379
+#   Postgres:     localhost:5432
 
 services:
 
-  # ── PostgreSQL ────────────────────────────────────────────────────────────────
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     environment:
@@ -27,7 +33,7 @@ services:
       timeout: 5s
       retries: 10
 
-  # ── Neo4j ─────────────────────────────────────────────────────────────────────
+  # ── Neo4j ───────────────────────────────────────────────────────────────────
   neo4j:
     image: neo4j:5.18-community
     environment:
@@ -43,12 +49,13 @@ services:
       - neo4j_data:/data
       - neo4j_logs:/logs
     healthcheck:
-      test: ["CMD", "neo4j", "status"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 20
+      start_period: 30s
 
-  # ── Redis (Celery broker + rate limiting) ─────────────────────────────────────
+  # ── Redis (Celery broker + rate limiting + cache) ───────────────────────────
   redis:
     image: redis:7-alpine
     ports:
@@ -58,8 +65,32 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
+      timeout: 3s
+      retries: 10
 
-  # ── Meilisearch (full-text search) ────────────────────────────────────────────
+  # ── Keycloak (local OIDC/SSO — dev + integration tests) ────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN:          admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB:                   dev-file
+      KC_HTTP_PORT:            "8080"
+      KC_HOSTNAME_STRICT:      "false"
+      KC_HTTP_ENABLED:         "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+  # ── Meilisearch (full-text search) ─────────────────────────────────────────
   meilisearch:
     image: getmeili/meilisearch:v1.6
     environment:
@@ -70,7 +101,7 @@ services:
     volumes:
       - meilisearch_data:/meili_data
 
-  # ── API server ────────────────────────────────────────────────────────────────
+  # ── API server ──────────────────────────────────────────────────────────────
   api:
     build:
       context: .
@@ -86,15 +117,17 @@ services:
       CELERY_RESULT_URL:     redis://redis:6379/1
       REDIS_URL:             redis://redis:6379/0
       MEILISEARCH_URL:       http://meilisearch:7700
+      KEYCLOAK_URL:          http://keycloak:8080
+      OIDC_ISSUER_URL:       http://keycloak:8080/realms/dgraphai
       JWT_SECRET:            dev-jwt-secret-change-in-production
       ENCRYPTION_KEY:        ""
       APP_URL:               http://localhost:8000
       DGRAPHAI_ENABLE_DOCS:  "true"
       LOG_LEVEL:             info
     depends_on:
-      postgres:    { condition: service_healthy }
-      neo4j:       { condition: service_healthy }
-      redis:       { condition: service_healthy }
+      postgres:   { condition: service_healthy }
+      neo4j:      { condition: service_healthy }
+      redis:      { condition: service_healthy }
     command: >
       sh -c "
         uv run alembic upgrade head &&
@@ -102,10 +135,10 @@ services:
       "
     volumes:
       - .:/app
-      - /app/.venv   # don't mount venv
+      - /app/.venv
     working_dir: /app
 
-  # ── Celery worker (default + alerts queue) ────────────────────────────────────
+  # ── Celery worker ───────────────────────────────────────────────────────────
   worker:
     build: { context: ., dockerfile: Dockerfile }
     environment:
@@ -118,7 +151,7 @@ services:
       REDIS_URL:         redis://redis:6379/0
     command: >
       uv run celery -A src.dgraphai.tasks.celery_app worker
-      --queues=default,alerts,gdpr --concurrency=2 --loglevel=info
+      --queues=default,alerts,gdpr,enrichment --concurrency=2 --loglevel=info
     depends_on:
       postgres: { condition: service_healthy }
       redis:    { condition: service_healthy }
@@ -127,15 +160,17 @@ services:
       - /app/.venv
     working_dir: /app
 
-  # ── Celery Beat (scheduler) ───────────────────────────────────────────────────
+  # ── Celery Beat (scheduler) ─────────────────────────────────────────────────
   beat:
     build: { context: ., dockerfile: Dockerfile }
     environment:
       CELERY_BROKER_URL: redis://redis:6379/0
+      DATABASE_URL:      postgresql+asyncpg://dgraphai:dgraphai-local@postgres:5432/dgraphai
     command: >
       uv run celery -A src.dgraphai.tasks.celery_app beat --loglevel=info
     depends_on:
-      redis: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+      postgres: { condition: service_healthy }
     volumes:
       - .:/app
       - /app/.venv
@@ -147,3 +182,4 @@ volumes:
   neo4j_logs:
   redis_data:
   meilisearch_data:
+  keycloak_data:
