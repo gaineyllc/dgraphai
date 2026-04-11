@@ -1,4 +1,8 @@
-/* ── Sidebar — Material 3 Expressive Icon Rail ──────────────────── */
+/* ── Sidebar — M3 Navigation Rail ───────────────────────────────────────────── */
+:root {
+  --sidebar-width: 80px;
+}
+
 .sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
@@ -7,133 +11,181 @@
   align-items: center;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border-subtle);
-  padding: 10px 0 8px;
-  gap: 2px;
+  padding: var(--space-3) 0 var(--space-3);
+  gap: var(--space-1);
   z-index: var(--z-sticky);
-  /* Subtle left-edge glow — M3 Expressive "expressiveness" */
-  box-shadow: inset -1px 0 0 var(--border-subtle);
+  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
+.sidebar::-webkit-scrollbar { display: none; }
 
-/* ── Logo ───────────────────────────────────────────────────────── */
+/* ── Logo ────────────────────────────────────────────────────────────────────── */
 .sidebar-logo {
-  width: 36px; height: 36px;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 4px; flex-shrink: 0;
-  cursor: pointer; border: none;
-  box-shadow: 0 2px 12px rgba(124,92,252,0.35);
-  transition: box-shadow var(--duration-short) var(--ease-standard),
-              transform  var(--duration-short) var(--ease-standard);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 56px;
+  padding: 8px 4px;
+  margin-bottom: var(--space-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-primary);
+  border-radius: var(--radius-md);
+  transition:
+    background var(--duration-micro) var(--ease-standard),
+    transform  var(--duration-short2) var(--ease-spring-tight);
 }
-.sidebar-logo:hover {
-  box-shadow: 0 4px 20px rgba(124,92,252,0.50);
-  transform: translateY(-1px);
+.sidebar-logo:hover { background: var(--sidebar-item-hover); }
+.sidebar-logo:active { transform: scale(0.93); }
+.sidebar-logo-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
 }
-.sidebar-logo:active { transform: scale(0.95); }
 
-/* ── Search ─────────────────────────────────────────────────────── */
-.sidebar-search {
-  width: 40px; margin-bottom: 2px;
-}
-
-/* ── Nav groups ─────────────────────────────────────────────────── */
+/* ── Nav groups ──────────────────────────────────────────────────────────────── */
 .sidebar-nav {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 2px; width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
 }
 
-/* ── Nav item ───────────────────────────────────────────────────── */
+/* ── Nav item ────────────────────────────────────────────────────────────────── */
 .sidebar-item {
   position: relative;
-  width: 40px; height: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 72px;
+  padding: 6px 4px;
   border-radius: var(--radius-md);
-  display: flex; align-items: center; justify-content: center;
   color: var(--sidebar-icon);
-  cursor: pointer; border: none;
   text-decoration: none;
-  transition: color       var(--duration-short) var(--ease-standard),
-              background  var(--duration-short) var(--ease-standard);
+  cursor: pointer;
+  transition:
+    color       var(--duration-micro) var(--ease-standard),
+    background  var(--duration-micro) var(--ease-standard);
 }
 .sidebar-item:hover {
   color: var(--text-primary);
   background: var(--sidebar-item-hover);
 }
-.sidebar-item.active {
-  color: var(--color-primary-bright);
-  background: var(--color-primary-container);
+.sidebar-item.active { color: var(--sidebar-icon-active); }
+
+/* ── Active pill indicator (56×32 behind the icon) ──────────────────────────── */
+.sidebar-item-indicator {
+  width: 56px;
+  height: 32px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--duration-micro) var(--ease-standard);
 }
-/* M3 active indicator: left accent line */
-.sidebar-item.active::before {
-  content: '';
-  position: absolute;
-  left: -1px;
-  top: 50%; transform: translateY(-50%);
-  width: 3px; height: 20px;
-  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
-  background: var(--color-primary);
+.sidebar-item.active .sidebar-item-indicator {
+  background: var(--sidebar-item-active);
+}
+.sidebar-item:not(.active):hover .sidebar-item-indicator {
+  background: var(--sidebar-item-hover);
 }
 
-/* ── Tooltip (flyout label) ─────────────────────────────────────── */
-.sidebar-tooltip {
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 50%; transform: translateY(-50%);
-  background: var(--surface-3);
-  border: 1px solid var(--border-default);
-  color: var(--text-primary);
-  font-size: 12px; font-weight: 500;
-  padding: 5px 10px; border-radius: var(--radius-sm);
+/* ── Item label ──────────────────────────────────────────────────────────────── */
+.sidebar-item-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: inherit;
+  text-align: center;
   white-space: nowrap;
-  box-shadow: var(--shadow-md);
-  opacity: 0; pointer-events: none;
-  transition: opacity var(--duration-short) var(--ease-standard),
-              transform var(--duration-short) var(--ease-standard);
-  transform: translateY(-50%) translateX(-4px);
-  z-index: var(--z-dropdown);
-}
-.sidebar-item:hover .sidebar-tooltip {
-  opacity: 1;
-  transform: translateY(-50%) translateX(0);
+  user-select: none;
 }
 
-/* ── Divider between primary/secondary nav ──────────────────────── */
+/* ── Divider ─────────────────────────────────────────────────────────────────── */
 .sidebar-divider {
-  width: 24px; height: 1px;
+  width: 36px;
+  height: 1px;
   background: var(--border-subtle);
-  margin: 4px 0;
+  margin: var(--space-2) 0;
   flex-shrink: 0;
 }
 
-/* ── Spacer ─────────────────────────────────────────────────────── */
-.sidebar-spacer { flex: 1; }
+/* ── Spacer ──────────────────────────────────────────────────────────────────── */
+.sidebar-spacer { flex: 1; min-height: var(--space-2); }
 
-/* ── Bottom actions ─────────────────────────────────────────────── */
-.sidebar-action {
-  width: 40px; display: flex; justify-content: center;
+/* ── Bottom action buttons ───────────────────────────────────────────────────── */
+.sidebar-bottom-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 72px;
+  padding: 6px 4px;
+  border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  text-decoration: none;
+  font-family: inherit;
+  transition:
+    color       var(--duration-micro) var(--ease-standard),
+    background  var(--duration-micro) var(--ease-standard);
 }
-.sidebar-action-link {
-  text-decoration: none; width: 100%;
-  display: flex; justify-content: center;
+.sidebar-bottom-btn:hover {
+  color: var(--text-primary);
+  background: var(--sidebar-item-hover);
 }
-.sidebar-logout {
-  color: var(--text-disabled);
-  margin-bottom: 2px;
+.sidebar-bottom-btn.active {
+  color: var(--sidebar-icon-active);
 }
+.sidebar-bottom-btn .sidebar-item-label {
+  color: inherit;
+}
+
+/* Notification button wrapper */
+.sidebar-notif-wrap {
+  position: relative;
+  flex-direction: column;
+}
+/* Override NotificationCenter trigger to fit rail layout */
+.sidebar-notif-wrap > * {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Logout ──────────────────────────────────────────────────────────────────── */
+.sidebar-logout { color: var(--text-disabled); }
 .sidebar-logout:hover { color: var(--color-critical); }
 
-/* ── Avatar ─────────────────────────────────────────────────────── */
+/* ── Avatar ──────────────────────────────────────────────────────────────────── */
 .sidebar-avatar {
-  width: 30px; height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  color: #fff; font-size: 10px; font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; border: none;
-  margin: 2px 0;
-  transition: box-shadow var(--duration-short) var(--ease-standard);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid transparent;
+  margin: var(--space-1) 0;
+  transition: border-color var(--duration-micro) var(--ease-standard);
 }
 .sidebar-avatar:hover {
-  box-shadow: 0 0 0 2px var(--color-primary-border);
+  border-color: var(--color-primary-border);
 }

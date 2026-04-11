@@ -69,6 +69,9 @@ function InventoryRoot({ onNavigate }) {
   const allCats    = Object.values(groups).flat()
   const totalNodes = allCats.reduce((s, c) => s + (c.count ?? 0), 0)
 
+  // `filtered` = same as groups (no client-side filter on root view)
+  const filtered: Record<string, any[]> = groups
+
   const handleNLResult = (result: any) => {
     if (result.matched_category) {
       onNavigate(result.matched_category)

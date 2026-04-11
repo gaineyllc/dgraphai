@@ -217,3 +217,92 @@
   --z-toast:     1200;
   --z-tooltip:   1500;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+   Applied when <html data-theme="light"> is set.
+   All dark defaults above; these override only what differs.
+   ══════════════════════════════════════════════════════════════════ */
+:root[data-theme="light"] {
+  /* ── Primary — slightly darker for light-mode contrast ──────────── */
+  --color-primary:            #6344e8;
+  --color-primary-dim:        #4f31d4;
+  --color-primary-bright:     #3b22b8;
+  --color-primary-container:  rgba(99,68,232,0.10);
+  --color-primary-border:     rgba(99,68,232,0.22);
+  --color-on-primary:         #ffffff;
+
+  /* ── Secondary (teal on light) ───────────────────────────────────── */
+  --color-secondary:          #008579;
+  --color-secondary-dim:      rgba(0,133,121,0.10);
+  --color-secondary-bright:   #005c53;
+  --color-secondary-container:rgba(0,133,121,0.08);
+  --color-secondary-border:   rgba(0,133,121,0.20);
+
+  /* ── Severity (light-mode versions) ─────────────────────────────── */
+  --color-critical-vivid:     #d32f2f;
+  --color-high:               #e65100;
+  --color-medium:             #f57f17;
+  --color-success:            #1b7a4f;
+  --color-success-dim:        rgba(27,122,79,0.10);
+  --color-success-border:     rgba(27,122,79,0.22);
+
+  /* ── Surfaces ────────────────────────────────────────────────────── */
+  --surface-0:  #fafafa;
+  --surface-1:  #f3f0fb;
+  --surface-2:  #ece8f5;
+  --surface-3:  #e2ddf0;
+  --surface-4:  #d5cfea;
+  --surface-5:  #c9c2e4;
+
+  --surface-container-lowest:  #ffffff;
+  --surface-container-low:     #f6f3fd;
+  --surface-container:         #f0ecfa;
+  --surface-container-high:    #e9e4f6;
+  --surface-container-highest: #e2dcf2;
+
+  /* ── Borders ─────────────────────────────────────────────────────── */
+  --border-subtle:  rgba(71,70,79,0.12);
+  --border-default: rgba(71,70,79,0.22);
+  --border-strong:  rgba(71,70,79,0.40);
+  --border-solid:   #d4d0dc;
+  --border-card:    #e2ddf0;
+
+  /* ── Text ────────────────────────────────────────────────────────── */
+  --text-primary:   #1c1b22;
+  --text-secondary: #47464f;
+  --text-tertiary:  #79767f;
+  --text-disabled:  #b0adb8;
+  --text-inverse:   #f4eff4;
+
+  /* ── State layers ────────────────────────────────────────────────── */
+  --state-hover:    rgba(99,68,232,0.06);
+  --state-pressed:  rgba(99,68,232,0.10);
+  --state-focused:  rgba(99,68,232,0.10);
+  --state-selected: rgba(99,68,232,0.14);
+  --state-dragged:  rgba(99,68,232,0.14);
+
+  /* ── Sidebar ─────────────────────────────────────────────────────── */
+  --sidebar-bg:                 #f3f0fb;
+  --sidebar-item-hover:         var(--state-hover);
+  --sidebar-item-active:        var(--color-primary-container);
+  --sidebar-item-active-border: var(--color-primary);
+  --sidebar-icon:               var(--text-tertiary);
+  --sidebar-icon-active:        var(--color-primary);
+
+  /* ── Top bar ─────────────────────────────────────────────────────── */
+  --topbar-bg:     var(--surface-0);
+  --topbar-border: var(--border-subtle);
+
+  /* ── Elevation ───────────────────────────────────────────────────── */
+  --elevation-1: 0 1px 2px rgba(0,0,0,0.08), 0 1px 3px 1px rgba(0,0,0,0.04);
+  --elevation-2: 0 1px 2px rgba(0,0,0,0.08), 0 2px 6px 2px rgba(0,0,0,0.04);
+  --elevation-3: 0 4px 8px 3px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.08);
+  --elevation-4: 0 6px 10px 4px rgba(0,0,0,0.06), 0 2px 3px rgba(0,0,0,0.08);
+  --elevation-5: 0 8px 12px 6px rgba(0,0,0,0.06), 0 4px 4px rgba(0,0,0,0.08);
+
+  /* ── Glows — softer on light ────────────────────────────────────── */
+  --glow-primary:   0 0 20px rgba(99,68,232,0.15);
+  --glow-secondary: 0 0 16px rgba(0,133,121,0.12);
+  --glow-critical:  0 0 16px rgba(211,47,47,0.15);
+}

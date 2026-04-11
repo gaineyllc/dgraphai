@@ -15,6 +15,8 @@ import { ResetPasswordPage }  from './pages/auth/ResetPasswordPage'
 import { AcceptInvitePage }   from './pages/auth/AcceptInvitePage'
 
 // ── Heavy pages — lazy loaded (Cytoscape, React Flow, CodeMirror) ─────────────
+const DashboardPage    = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const ExplorePage      = lazy(() => import('./pages/ExplorePage').then(m => ({ default: m.ExplorePage })))
 const GraphPage        = lazy(() => import('./pages/GraphPage').then(m => ({ default: m.GraphPage })))
 const QueryWorkspace   = lazy(() => import('./pages/QueryWorkspace').then(m => ({ default: m.QueryWorkspace })))
 const QueryBuilder     = lazy(() => import('./pages/QueryBuilder').then(m => ({ default: m.QueryBuilder })))
@@ -96,7 +98,8 @@ function AppShell() {
             <Route path="/privacy"         element={<LegalPage />} />
 
             {/* App routes — lazy */}
-            <Route path="/"           element={<GraphPage />} />
+            <Route path="/"           element={<DashboardPage />} />
+            <Route path="/explore"    element={<ExplorePage />} />
             <Route path="/mounts"     element={<MountsPage />} />
             <Route path="/connectors" element={<ConnectorsPage />} />
             <Route path="/inventory"  element={<InventoryPage />} />
