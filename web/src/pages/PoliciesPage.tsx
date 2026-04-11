@@ -553,49 +553,48 @@ function AccessTab() {
 
       <div className="pol-card pol-card-wide">
         <div className="pol-card-header">
-          <h3>Agent Service Accounts</h3>
-          <p>Configure the OS service account the agent runs under. Using a dedicated service account means file access policies are enforced at the host OS level — the agent can only access files the service account has permission to read.</p>
+          <h3>Access Control Policy</h3>
+          <p>
+            These are <strong>platform-side policy flags</strong> — they tell agents what
+            access model to enforce. Service account credentials and OS-level config
+            live on the agent host, not in the platform.
+          </p>
         </div>
 
-        <div className="pol-platform-tabs">
-          <PlatformSection
-            platform="Windows"
-            icon="⊞"
-            fields={[
-              { label: 'Service account', key: 'win_account', default: 'NT AUTHORITY\\NetworkService', hint: 'The Windows account the agent service runs as. Recommended: a dedicated domain service account with read-only access to target shares.' },
-              { label: 'Install as Windows Service', key: 'win_service', type: 'bool', default: true, hint: 'Register dgraph-agent as a Windows Service (auto-start on login, runs in background)' },
-              { label: 'Use SYSTEM account', key: 'win_system', type: 'bool', default: false, hint: 'Run as SYSTEM (full access). Not recommended — use a restricted service account instead.' },
-            ]}
-            note="Run the installer as Administrator: .\\install-windows.ps1 -ApiKey dga_xxx -ServiceAccount 'DOMAIN\\dgraph-svc'"
-          />
-          <PlatformSection
-            platform="Linux"
-            icon="🐧"
-            fields={[
-              { label: 'Service account', key: 'linux_account', default: 'dgraph-agent', hint: 'Linux user account the agent runs as. The installer creates this user automatically.' },
-              { label: 'Install as systemd service', key: 'linux_systemd', type: 'bool', default: true, hint: 'Register as a systemd service (auto-start, restart on failure)' },
-              { label: 'Drop capabilities after startup', key: 'linux_caps', type: 'bool', default: true, hint: 'Drop all Linux capabilities after initialization. Agent runs with minimal privileges.' },
-            ]}
-            note="Install: curl -L https://api.dgraph.ai/install.sh | sudo DGRAPH_AGENT_API_KEY=dga_xxx bash"
-          />
-          <PlatformSection
-            platform="macOS"
-            icon=""
-            fields={[
-              { label: 'Service account', key: 'mac_account', default: '_dgraph-agent', hint: 'macOS service account (prefixed with _ by convention). The installer creates a system user.' },
-              { label: 'Install as LaunchDaemon', key: 'mac_daemon', type: 'bool', default: true, hint: 'Register as a launchd daemon (auto-start, runs as root for file access, then drops to service account)' },
-              { label: 'Full Disk Access', key: 'mac_fda', type: 'bool', default: false, hint: 'Grant Full Disk Access via MDM profile. Required to scan protected directories (Desktop, Documents, Downloads, iCloud).' },
-            ]}
-            note="macOS: sudo ./install-macos.sh --api-key dga_xxx. Requires Full Disk Access for complete scanning."
-          />
+        <div className="pol-info-banner">
+          <Info size={14} />
+          <span>
+            Service account names and credentials are configured at install time on each agent
+            host — never sent to or stored by the platform. Pass them via the installer:
+            <br /><br />
+            <code>install-windows.ps1 -ApiKey dga_xxx -ServiceAccount "DOMAIN\\dgraph-svc"</code>
+          </span>
         </div>
 
-        <div className="pol-fields" style={{ marginTop: 24 }}>
-          <FieldRow label="Enforce host-level permissions" hint="Agent only accesses files the service account can read. Ensures OS ACLs are respected.">
+        <div className="pol-fields">
+          <FieldRow
+            label="Enforce host-level file permissions"
+            hint="Agent must only access files the OS service account can read. Agents that cannot honor this are rejected."
+          >
             <Toggle defaultChecked={true} />
           </FieldRow>
-          <FieldRow label="Drop elevated privileges after startup" hint="Agent drops to service account after connecting to platform. Reduces attack surface.">
+          <FieldRow
+            label="Require privilege drop after startup"
+            hint="Agent must drop to its service account after initial connection. Prevents long-running elevated processes."
+          >
             <Toggle defaultChecked={true} />
+          </FieldRow>
+          <FieldRow
+            label="Block SYSTEM / root account installs"
+            hint="Reject agents running as SYSTEM (Windows) or root (Linux/macOS). Enforces least-privilege on all agents."
+          >
+            <Toggle defaultChecked={false} />
+          </FieldRow>
+          <FieldRow
+            label="Require agent signing"
+            hint="Only accept agents signed with the official dgraph.ai release key. Blocks tampered or unofficial binaries."
+          >
+            <Toggle defaultChecked={false} />
           </FieldRow>
         </div>
 
@@ -604,6 +603,55 @@ function AccessTab() {
         </div>
       </div>
 
+      <div className="pol-card">
+        <div className="pol-card-header">
+          <h3>Agent installer commands</h3>
+          <p>Pass service account config at install time — not stored in platform</p>
+        </div>
+        <div className="pol-platform-tabs">
+          {[
+            {
+              platform: 'Windows',
+              icon: '⊞',
+              cmd: '.\\install-windows.ps1 -ApiKey dga_xxx -ServiceAccount "DOMAIN\\dgraph-svc"',
+              open: true,
+            },
+            {
+              platform: 'Linux',
+              icon: '🐧',
+              cmd: 'curl -L https://api.dgraph.ai/install.sh | sudo DGRAPH_AGENT_API_KEY=dga_xxx DGRAPH_SERVICE_USER=dgraph-agent bash',
+              open: false,
+            },
+            {
+              platform: 'macOS',
+              icon: '',
+              cmd: 'sudo ./install-macos.sh --api-key dga_xxx --service-user _dgraph-agent',
+              open: false,
+            },
+          ].map(p => (
+            <InstallSection key={p.platform} platform={p.platform} icon={p.icon} cmd={p.cmd} defaultOpen={p.open} />
+          ))}
+        </div>
+      </div>
+
+    </div>
+  )
+}
+
+function InstallSection({ platform, icon, cmd, defaultOpen }: any) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="pol-platform-section">
+      <button className="pol-platform-header" onClick={() => setOpen(!open)}>
+        <span className="pol-platform-icon">{icon}</span>
+        <span className="pol-platform-name">{platform}</span>
+        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+      </button>
+      {open && (
+        <div className="pol-platform-body">
+          <div className="pol-platform-note"><code>{cmd}</code></div>
+        </div>
+      )}
     </div>
   )
 }
