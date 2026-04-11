@@ -323,12 +323,210 @@ class AzureBlobConnector(BaseConnector):
             return {"success": False, "message": str(e)}
 
 
+# ── Built-in: Local filesystem ───────────────────────────────────────────────
+
+class LocalConnector(BaseConnector):
+    """
+    Local filesystem connector.
+    Config: {path, follow_symlinks, exclude_patterns}
+    Runs inside the agent on the same machine.
+    """
+    manifest = ConnectorManifest(
+        id          = "local",
+        name        = "Local folder",
+        description = "Index files from a local folder or mounted drive",
+        version     = "1.0.0",
+        author      = "dgraph.ai",
+        icon_url    = "https://dgraph.ai/icons/local.svg",
+        config_schema = {
+            "type": "object",
+            "properties": {
+                "path":             {"type": "string", "title": "Folder path", "placeholder": "/mnt/data or C:\\Data"},
+                "follow_symlinks": {"type": "boolean", "title": "Follow symlinks", "default": False},
+                "exclude_patterns":{"type": "string",  "title": "Exclude patterns (comma-separated glob)", "default": ".git,node_modules,.DS_Store"},
+            },
+            "required": ["path"],
+        },
+        capabilities = ["read", "stream", "watch"],
+    )
+
+    async def walk(self) -> AsyncIterator[ConnectorFileRecord]:
+        import os, time
+        root = Path(self.config["path"]).expanduser()
+        follow = self.config.get("follow_symlinks", False)
+        excludes = [p.strip() for p in self.config.get("exclude_patterns", ".git,node_modules").split(",")]
+
+        for dirpath, dirnames, filenames in os.walk(root, followlinks=follow):
+            # Prune excluded directories
+            dirnames[:] = [d for d in dirnames if not any(
+                Path(dirpath, d).match(ex) for ex in excludes
+            )]
+            for fname in filenames:
+                fpath = Path(dirpath) / fname
+                try:
+                    st = fpath.stat()
+                    yield ConnectorFileRecord(
+                        path       = str(fpath),
+                        name       = fname,
+                        size_bytes = st.st_size,
+                        modified   = st.st_mtime,
+                        suffix     = fpath.suffix.lower(),
+                    )
+                except (PermissionError, OSError):
+                    continue
+
+    async def test_connection(self) -> dict[str, Any]:
+        root = Path(self.config.get("path", ""))
+        if root.exists() and root.is_dir():
+            count = sum(1 for _ in root.iterdir())
+            return {"success": True, "message": f"Connected — {count} items at root"}
+        return {"success": False, "message": f"Path not found or not a directory: {root}"}
+
+
+# ── Built-in: SMB/CIFS share ──────────────────────────────────────────────────
+
+class SMBConnector(BaseConnector):
+    """
+    SMB/CIFS share connector — Synology, QNAP, Windows shares, Samba.
+    Config: {host, share, username, password, domain, port}
+    Requires: smbprotocol
+    """
+    manifest = ConnectorManifest(
+        id          = "smb",
+        name        = "NAS / SMB Share",
+        description = "Index files from a Synology, QNAP, Windows share, or any SMB/CIFS server",
+        version     = "1.0.0",
+        author      = "dgraph.ai",
+        icon_url    = "https://dgraph.ai/icons/smb.svg",
+        config_schema = {
+            "type": "object",
+            "properties": {
+                "host":     {"type": "string", "title": "Host / IP address", "placeholder": "192.168.1.10"},
+                "share":    {"type": "string", "title": "Share name",       "placeholder": "Media"},
+                "username": {"type": "string", "title": "Username"},
+                "password": {"type": "string", "title": "Password",   "format": "password"},
+                "domain":   {"type": "string", "title": "Domain (optional)", "default": "WORKGROUP"},
+                "port":     {"type": "integer","title": "Port",        "default": 445},
+                "path":     {"type": "string", "title": "Sub-path (optional)", "default": "/"},
+            },
+            "required": ["host", "share"],
+        },
+        capabilities = ["read", "stream"],
+    )
+
+    async def walk(self) -> AsyncIterator[ConnectorFileRecord]:
+        try:
+            from smbprotocol.connection import Connection
+            from smbprotocol.session import Session
+            from smbprotocol.tree import TreeConnect
+            from smbprotocol.open import Open, CreateDisposition, CreateOptions, FileAttributes, FilePipePrinterAccessMask
+            import smbclient
+        except ImportError:
+            raise RuntimeError("smbprotocol required: uv add smbprotocol smbclient")
+
+        host     = self.config["host"]
+        share    = self.config["share"]
+        username = self.config.get("username", "")
+        password = self.config.get("password", "")
+        domain   = self.config.get("domain", "WORKGROUP")
+        port     = self.config.get("port", 445)
+        sub_path = self.config.get("path", "/").lstrip("/")
+
+        smbclient.register_session(host, username=username, password=password, port=port)
+        unc_root = f"\\\\{host}\\{share}\\{sub_path}"
+
+        for entry in smbclient.scandir(unc_root):
+            if entry.is_file():
+                stat = entry.stat()
+                yield ConnectorFileRecord(
+                    path       = f"smb://{host}/{share}/{entry.name}",
+                    name       = entry.name,
+                    size_bytes = stat.st_size,
+                    modified   = stat.st_mtime,
+                    suffix     = Path(entry.name).suffix.lower(),
+                )
+
+    async def test_connection(self) -> dict[str, Any]:
+        try:
+            import smbclient
+            host = self.config["host"]
+            smbclient.register_session(
+                host,
+                username=self.config.get("username", ""),
+                password=self.config.get("password", ""),
+                port=self.config.get("port", 445),
+            )
+            unc = f"\\\\{host}\\{self.config['share']}"
+            smbclient.listdir(unc)
+            return {"success": True, "message": f"Connected to {unc}"}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+
+# ── Built-in: NFS share ───────────────────────────────────────────────────────
+
+class NFSConnector(BaseConnector):
+    """
+    NFS share connector.
+    Config: {host, export_path, mount_point}
+    Note: Requires NFS share to be mounted locally, or uses libnfs.
+    For simplicity, this connector walks a locally-mounted NFS path.
+    """
+    manifest = ConnectorManifest(
+        id          = "nfs",
+        name        = "NFS Share",
+        description = "Index files from a locally-mounted NFS share",
+        version     = "1.0.0",
+        author      = "dgraph.ai",
+        icon_url    = "https://dgraph.ai/icons/nfs.svg",
+        config_schema = {
+            "type": "object",
+            "properties": {
+                "host":        {"type": "string", "title": "NFS server host",          "placeholder": "192.168.1.10"},
+                "export_path": {"type": "string", "title": "Export path on server",   "placeholder": "/volume1/data"},
+                "mount_point": {"type": "string", "title": "Local mount point",       "placeholder": "/mnt/nas"},
+            },
+            "required": ["host", "export_path", "mount_point"],
+        },
+        capabilities = ["read", "stream"],
+    )
+
+    async def walk(self) -> AsyncIterator[ConnectorFileRecord]:
+        """Walk the locally-mounted NFS path (same as LocalConnector)."""
+        import os
+        mount = Path(self.config["mount_point"]).expanduser()
+        for dirpath, dirnames, filenames in os.walk(mount):
+            dirnames[:] = [d for d in dirnames if not d.startswith('.')]
+            for fname in filenames:
+                fpath = Path(dirpath) / fname
+                try:
+                    st = fpath.stat()
+                    yield ConnectorFileRecord(
+                        path       = f"nfs://{self.config['host']}{self.config['export_path']}/{fpath.relative_to(mount)}",
+                        name       = fname,
+                        size_bytes = st.st_size,
+                        modified   = st.st_mtime,
+                        suffix     = fpath.suffix.lower(),
+                    )
+                except (PermissionError, OSError):
+                    continue
+
+    async def test_connection(self) -> dict[str, Any]:
+        mount = Path(self.config.get("mount_point", ""))
+        if mount.exists() and mount.is_dir():
+            return {"success": True, "message": f"NFS mount accessible at {mount}"}
+        return {"success": False, "message": f"Mount point not found or not mounted: {mount}"}
+
+
 # ── Connector registry ────────────────────────────────────────────────────────
 
 from src.dgraphai.connectors.sharepoint import SharePointConnector
 from src.dgraphai.connectors.gcs import GCSConnector
 
 _REGISTRY: dict[str, type[BaseConnector]] = {
+    "local":        LocalConnector,
+    "smb":          SMBConnector,
+    "nfs":          NFSConnector,
     "aws-s3":       S3Connector,
     "azure-blob":   AzureBlobConnector,
     "sharepoint":   SharePointConnector,
