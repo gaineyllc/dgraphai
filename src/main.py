@@ -56,7 +56,23 @@ async def lifespan(app: FastAPI):
     # Create Postgres tables on startup (idempotent)
     await create_tables()
     log.info("Database tables ready")
+
+    # Connect graph client
+    from src.dgraphai.graph.client import get_graph_client
+    graph = get_graph_client()
+    try:
+        await graph.connect()
+        log.info("Neo4j connected")
+    except Exception as e:
+        log.warning(f"Neo4j connection failed (graph features disabled): {e}")
+
     yield
+
+    # Shutdown: close graph client
+    try:
+        await graph.close()
+    except Exception:
+        pass
 
 
 # Observability setup (before routes)

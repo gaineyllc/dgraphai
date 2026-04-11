@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/gaineyllc/dgraphai/agent/internal/classify"
 )
 
 // localConnector walks a local filesystem path.
@@ -48,8 +50,7 @@ func (c *localConnector) Test(ctx context.Context) error {
 func (c *localConnector) Walk(ctx context.Context, fn WalkFunc) error {
 	return filepath.WalkDir(c.root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			// Log permission errors but continue
-			return nil
+			return nil // skip permission errors
 		}
 		select {
 		case <-ctx.Done():
@@ -57,7 +58,6 @@ func (c *localConnector) Walk(ctx context.Context, fn WalkFunc) error {
 		default:
 		}
 
-		// Skip excluded dirs
 		if d.IsDir() {
 			name := d.Name()
 			for _, ex := range c.excludeDirs {
@@ -68,7 +68,6 @@ func (c *localConnector) Walk(ctx context.Context, fn WalkFunc) error {
 			return nil
 		}
 
-		// Only process regular files
 		if !d.Type().IsRegular() {
 			return nil
 		}
@@ -78,19 +77,23 @@ func (c *localConnector) Walk(ctx context.Context, fn WalkFunc) error {
 			return nil
 		}
 
+		ext := strings.ToLower(filepath.Ext(d.Name()))
+		mimeType, fileCategory := classify.ClassifyFile(ext)
+
 		rel, _ := filepath.Rel(c.root, path)
 		fileInfo := FileInfo{
-			Path:       "/" + filepath.ToSlash(rel),
-			Name:       d.Name(),
-			Extension:  strings.ToLower(filepath.Ext(d.Name())),
-			Size:       info.Size(),
-			ModifiedAt: info.ModTime().UTC(),
-			IndexedAt:  time.Now().UTC(),
-			Protocol:   "local",
+			Path:         "/" + filepath.ToSlash(rel),
+			Name:         d.Name(),
+			Extension:    ext,
+			Size:         info.Size(),
+			ModifiedAt:   info.ModTime().UTC(),
+			IndexedAt:    time.Now().UTC(),
+			Protocol:     "local",
+			MIMEType:     mimeType,
+			FileCategory: fileCategory,
 		}
 
-		// Compute SHA-256 for deduplication (stream, don't load into memory)
-		if info.Size() < 500*1024*1024 { // Skip files >500MB
+		if info.Size() < 500*1024*1024 {
 			if hash, err := hashFile(path); err == nil {
 				fileInfo.SHA256 = hash
 			}
@@ -101,7 +104,6 @@ func (c *localConnector) Walk(ctx context.Context, fn WalkFunc) error {
 }
 
 func (c *localConnector) Open(ctx context.Context, path string) (io.ReadCloser, error) {
-	// Reconstruct absolute path from relative path
 	abs := filepath.Join(c.root, filepath.FromSlash(strings.TrimPrefix(path, "/")))
 	return os.Open(abs)
 }
@@ -112,7 +114,6 @@ func hashFile(path string) (string, error) {
 		return "", err
 	}
 	defer f.Close()
-
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
 		return "", err

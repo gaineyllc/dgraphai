@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/hirochachacha/go-smb2"
+	"github.com/gaineyllc/dgraphai/agent/internal/classify"
 )
 
 // smbConnector indexes files over SMB/CIFS.
@@ -131,17 +132,21 @@ func walkSMB(ctx context.Context, fs *smb2.Share, dir, share, host string, fn Wa
 			continue
 		}
 
+		fileExt := strings.ToLower(ext(entry.Name()))
+		mimeType, fileCategory := classify.ClassifyFile(fileExt)
 		modTime := entry.ModTime().UTC()
 		fileInfo := FileInfo{
-			Path:       "/" + path,
-			Name:       entry.Name(),
-			Extension:  strings.ToLower(ext(entry.Name())),
-			Size:       entry.Size(),
-			ModifiedAt: modTime,
-			IndexedAt:  time.Now().UTC(),
-			Protocol:   "smb",
-			Host:       host,
-			Share:      share,
+			Path:         "/" + path,
+			Name:         entry.Name(),
+			Extension:    fileExt,
+			Size:         entry.Size(),
+			ModifiedAt:   modTime,
+			IndexedAt:    time.Now().UTC(),
+			Protocol:     "smb",
+			Host:         host,
+			Share:        share,
+			MIMEType:     mimeType,
+			FileCategory: fileCategory,
 		}
 
 		if err := fn(ctx, fileInfo); err != nil {
@@ -200,3 +205,5 @@ func ext(name string) string {
 	}
 	return ""
 }
+
+

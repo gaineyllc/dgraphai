@@ -54,25 +54,38 @@ class GraphClient:
 
     # ── Graph statistics ───────────────────────────────────────────────────────
 
-    async def stats(self) -> dict[str, int]:
-        """Return node/relationship counts for the dashboard."""
-        node_types = [
-            "File", "Directory", "Person", "FaceCluster",
-            "Location", "Organization", "Topic", "Application",
-            "Vendor", "Vulnerability", "Certificate",
-        ]
+    async def stats(self, tenant_id: str | None = None) -> dict[str, int]:
+        """Return node/relationship counts for the dashboard.
+        Uses dynamic label discovery so new node types appear automatically.
+        Filters by tenant_id when provided.
+        """
         counts: dict[str, int] = {}
-        for nt in node_types:
-            try:
-                row = await self.query_one(
-                    f"MATCH (n:{nt}) RETURN count(n) AS c"
+        try:
+            # Dynamic: count all labels actually present in the graph
+            if tenant_id:
+                rows = await self.query(
+                    "MATCH (n) WHERE n.tenant_id = $tid "
+                    "RETURN labels(n)[0] AS label, count(n) AS c",
+                    {"tid": tenant_id}
                 )
-                counts[nt] = row["c"] if row else 0
-            except Exception:
-                counts[nt] = 0
+            else:
+                rows = await self.query(
+                    "MATCH (n) RETURN labels(n)[0] AS label, count(n) AS c"
+                )
+            for row in rows:
+                if row.get("label"):
+                    counts[row["label"]] = row["c"]
+        except Exception:
+            pass
 
         try:
-            row = await self.query_one("MATCH ()-[r]->() RETURN count(r) AS c")
+            if tenant_id:
+                row = await self.query_one(
+                    "MATCH (a)-[r]->(b) WHERE a.tenant_id = $tid RETURN count(r) AS c",
+                    {"tid": tenant_id}
+                )
+            else:
+                row = await self.query_one("MATCH ()-[r]->() RETURN count(r) AS c")
             counts["relationships"] = row["c"] if row else 0
         except Exception:
             counts["relationships"] = 0

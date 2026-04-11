@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from src.dgraphai.graph.client import GraphClient, get_graph_client
+from src.dgraphai.auth.oidc import get_auth_context, AuthContext
 
 router = APIRouter(prefix="/api/graph", tags=["graph"])
 
@@ -31,10 +32,11 @@ class SearchRequest(BaseModel):
 
 @router.get("/stats")
 async def get_stats(
+    auth: AuthContext = Depends(get_auth_context),
     client: GraphClient = Depends(get_graph_client),
 ) -> dict[str, int]:
-    """Node and relationship counts for the dashboard overview."""
-    return await client.stats()
+    """Node and relationship counts for the dashboard overview, filtered to this tenant."""
+    return await client.stats(tenant_id=str(auth.tenant_id))
 
 
 @router.post("/query")
