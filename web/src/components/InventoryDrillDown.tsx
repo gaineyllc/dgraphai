@@ -21,6 +21,7 @@ import {
   ChevronRight, ArrowUpRight, X, Plus,
   SlidersHorizontal, Filter, ExternalLink
 } from 'lucide-react'
+import { apiFetch } from '../lib/apiFetch'
 
 const api = {
   detail:     (id, page, ps = 25) =>

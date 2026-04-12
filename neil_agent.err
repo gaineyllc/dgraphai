@@ -10,3 +10,93 @@
 2026-04-11T19:43:18.327-0400	[34mINFO[0m	dgraph-agent/main.go:267	scan complete	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "files": 11775, "duration": 291.7568098}
 2026-04-11T19:43:26.585-0400	[34mINFO[0m	dgraph-agent/main.go:253	starting scan	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "type": "local", "name": "Workspace"}
 2026-04-11T19:43:26.585-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775951006585184800", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "started"}
+2026-04-11T19:47:19.133-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775951006585184800", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "completed"}
+2026-04-11T19:47:19.134-0400	[34mINFO[0m	sync/client.go:151	Scan complete	{"connector": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "files": 11776, "duration": 232.5486493, "status": "completed"}
+2026-04-11T19:47:19.134-0400	[34mINFO[0m	dgraph-agent/main.go:267	scan complete	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "files": 11776, "duration": 232.5486493}
+2026-04-11T19:47:19.156-0400	[34mINFO[0m	platform/client.go:137	fetched config from platform	{"connectors": 1, "tenant_id": "dc31bec1-248a-4ede-a9ec-a2fd61ad2ad2"}
+2026-04-11T19:47:19.156-0400	[34mINFO[0m	dgraph-agent/main.go:178	config refreshed	{"connectors": 1}
+2026-04-11T19:48:26.582-0400	[34mINFO[0m	dgraph-agent/main.go:253	starting scan	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "type": "local", "name": "Workspace"}
+2026-04-11T19:48:26.582-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775951306582351700", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "started"}
+2026-04-11T19:50:21.963-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 1, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": read tcp 127.0.0.1:55024->127.0.0.1:8001: wsarecv: An existing connection was forcibly closed by the remote host."}
+2026-04-11T19:50:26.971-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 2, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:50:36.979-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 3, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:50:36.982-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 1, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:50:41.990-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 2, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:50:51.996-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 3, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:50:51.997-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775951306582351700", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "failed"}
+2026-04-11T19:50:51.997-0400	[34mINFO[0m	sync/client.go:151	Scan complete	{"connector": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "files": 6000, "duration": 145.4149032, "status": "failed"}
+2026-04-11T19:50:51.997-0400	[31mERROR[0m	dgraph-agent/main.go:261	scan failed	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "error": "failed to send delta after 3 attempts: POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+main.runAllScans
+	F:/projects/dgraphai/agent-go/cmd/dgraph-agent/main.go:261
+main.run
+	F:/projects/dgraphai/agent-go/cmd/dgraph-agent/main.go:184
+github.com/spf13/cobra.(*Command).execute
+	C:/Users/User/go/pkg/mod/github.com/spf13/cobra@v1.8.1/command.go:985
+github.com/spf13/cobra.(*Command).ExecuteC
+	C:/Users/User/go/pkg/mod/github.com/spf13/cobra@v1.8.1/command.go:1117
+github.com/spf13/cobra.(*Command).Execute
+	C:/Users/User/go/pkg/mod/github.com/spf13/cobra@v1.8.1/command.go:1041
+main.main
+	F:/projects/dgraphai/agent-go/cmd/dgraph-agent/main.go:56
+runtime.main
+	C:/Program Files/Go/src/runtime/proc.go:272
+2026-04-11T19:50:51.998-0400	[33mWARN[0m	platform/client.go:112	platform unreachable, using cached config	{"error": "Get \"http://localhost:8001/api/agent/config\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it.", "cached_at": "2026-04-11T19:47:19.156-0400"}
+2026-04-11T19:50:51.999-0400	[34mINFO[0m	dgraph-agent/main.go:178	config refreshed	{"connectors": 1}
+2026-04-11T19:53:26.573-0400	[33mWARN[0m	platform/client.go:112	platform unreachable, using cached config	{"error": "Get \"http://localhost:8001/api/agent/config\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it.", "cached_at": "2026-04-11T19:47:19.156-0400"}
+2026-04-11T19:53:26.573-0400	[34mINFO[0m	dgraph-agent/main.go:178	config refreshed	{"connectors": 1}
+2026-04-11T19:53:26.573-0400	[34mINFO[0m	dgraph-agent/main.go:253	starting scan	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "type": "local", "name": "Workspace"}
+2026-04-11T19:53:26.573-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775951606573914700", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "started"}
+2026-04-11T19:53:26.634-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 1, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:53:31.642-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 2, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:53:41.648-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 3, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:53:41.652-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 1, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:53:46.660-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 2, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:53:56.667-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 3, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:53:56.667-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775951606573914700", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "failed"}
+2026-04-11T19:53:56.667-0400	[34mINFO[0m	sync/client.go:151	Scan complete	{"connector": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "files": 0, "duration": 30.0932253, "status": "failed"}
+2026-04-11T19:53:56.667-0400	[31mERROR[0m	dgraph-agent/main.go:261	scan failed	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "error": "failed to send delta after 3 attempts: POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+main.runAllScans
+	F:/projects/dgraphai/agent-go/cmd/dgraph-agent/main.go:261
+main.run
+	F:/projects/dgraphai/agent-go/cmd/dgraph-agent/main.go:184
+github.com/spf13/cobra.(*Command).execute
+	C:/Users/User/go/pkg/mod/github.com/spf13/cobra@v1.8.1/command.go:985
+github.com/spf13/cobra.(*Command).ExecuteC
+	C:/Users/User/go/pkg/mod/github.com/spf13/cobra@v1.8.1/command.go:1117
+github.com/spf13/cobra.(*Command).Execute
+	C:/Users/User/go/pkg/mod/github.com/spf13/cobra@v1.8.1/command.go:1041
+main.main
+	F:/projects/dgraphai/agent-go/cmd/dgraph-agent/main.go:56
+runtime.main
+	C:/Program Files/Go/src/runtime/proc.go:272
+2026-04-11T19:58:26.572-0400	[34mINFO[0m	dgraph-agent/main.go:253	starting scan	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "type": "local", "name": "Workspace"}
+2026-04-11T19:58:26.572-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775951906572547000", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "started"}
+2026-04-11T19:58:26.637-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 1, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:58:31.645-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 2, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:58:41.652-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 3, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:58:41.656-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 1, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:58:46.662-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 2, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:58:56.669-0400	[33mWARN[0m	sync/client.go:237	Delta send failed, will retry	{"attempt": 3, "error": "POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+2026-04-11T19:58:56.670-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775951906572547000", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "failed"}
+2026-04-11T19:58:56.670-0400	[34mINFO[0m	sync/client.go:151	Scan complete	{"connector": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "files": 0, "duration": 30.0976937, "status": "failed"}
+2026-04-11T19:58:56.670-0400	[31mERROR[0m	dgraph-agent/main.go:261	scan failed	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "error": "failed to send delta after 3 attempts: POST /api/scanner/sync: Post \"http://localhost:8001/api/scanner/sync\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it."}
+main.runAllScans
+	F:/projects/dgraphai/agent-go/cmd/dgraph-agent/main.go:261
+main.run
+	F:/projects/dgraphai/agent-go/cmd/dgraph-agent/main.go:184
+github.com/spf13/cobra.(*Command).execute
+	C:/Users/User/go/pkg/mod/github.com/spf13/cobra@v1.8.1/command.go:985
+github.com/spf13/cobra.(*Command).ExecuteC
+	C:/Users/User/go/pkg/mod/github.com/spf13/cobra@v1.8.1/command.go:1117
+github.com/spf13/cobra.(*Command).Execute
+	C:/Users/User/go/pkg/mod/github.com/spf13/cobra@v1.8.1/command.go:1041
+main.main
+	F:/projects/dgraphai/agent-go/cmd/dgraph-agent/main.go:56
+runtime.main
+	C:/Program Files/Go/src/runtime/proc.go:272
+2026-04-11T19:58:56.671-0400	[33mWARN[0m	platform/client.go:112	platform unreachable, using cached config	{"error": "Get \"http://localhost:8001/api/agent/config\": dial tcp [::1]:8001: connectex: No connection could be made because the target machine actively refused it.", "cached_at": "2026-04-11T19:47:19.156-0400"}
+2026-04-11T19:58:56.671-0400	[34mINFO[0m	dgraph-agent/main.go:178	config refreshed	{"connectors": 1}
+2026-04-11T20:03:26.596-0400	[34mINFO[0m	platform/client.go:137	fetched config from platform	{"connectors": 1, "tenant_id": "dc31bec1-248a-4ede-a9ec-a2fd61ad2ad2"}
+2026-04-11T20:03:26.597-0400	[34mINFO[0m	dgraph-agent/main.go:178	config refreshed	{"connectors": 1}
+2026-04-11T20:03:26.597-0400	[34mINFO[0m	dgraph-agent/main.go:253	starting scan	{"id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "type": "local", "name": "Workspace"}
+2026-04-11T20:03:26.597-0400	[34mINFO[0m	sync/client.go:274	scan event	{"scan_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1-1775952206597652000", "connector_id": "d9d444eb-ae44-4622-ae2c-30a55a91f3b1", "status": "started"}

@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * ConnectorsPage — full connector management surface.
+ * ConnectorsPage - full connector management surface.
  *
  * Shows:
  *   - All configured connectors as rich cards
@@ -31,7 +31,7 @@ const api = {
   delete:   (id)    => apiFetch(`/api/connectors/${id}`, { method: 'DELETE' }).then(r => r.json()),
   test:     (id)    => apiFetch(`/api/connectors/${id}/test`, { method: 'POST' }).then(r => r.json()),
   agents:   (id)    => apiFetch(`/api/connectors/${id}/agents`).then(r => r.json()),
-  getAgents:()      => apiFetch('/api/scanner/register').catch(() => ({ json: () => [] })),
+  getAgents:()      => apiFetch('/api/agents').then(r => r.json()).catch(() => []),
 }
 
 // ── Type metadata ─────────────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ export function ConnectorsPage() {
 
       {/* Connector grid */}
       {isLoading ? (
-        <div className="cp-loading">Loading connectors…</div>
+        <div className="cp-loading">Loading connectors...</div>
       ) : connectors.length === 0 ? (
         <EmptyState onAdd={() => setShowAdd(true)} />
       ) : (
@@ -319,7 +319,7 @@ function ConnectorModal({ types, initial, onClose, onSave }) {
 
   const { data: scannerAgents = [] } = useQuery({
     queryKey: ['scanner-agents-list'],
-    queryFn:  () => apiFetch('/api/connectors/00000000-0000-0000-0000-000000000000/agents').then(r => r.ok ? r.json() : []),
+    queryFn:  api.getAgents,
   })
 
   const typeInfo = types.find(t => t.id === selectedType)
@@ -487,16 +487,37 @@ function ConnectorModal({ types, initial, onClose, onSave }) {
                 <select value={agentId} onChange={e => setAgentId(e.target.value)}>
                   <option value="">— Select agent —</option>
                   {scannerAgents.map(a => (
-                    <option key={a.id} value={a.id} disabled={!a.is_online}>
-                      {a.name} ({a.platform}){!a.is_online ? ' — offline' : ''}
+                    <option key={a.id} value={a.id}>
+                      {a.name}{a.hostname ? ` (${a.hostname})` : ''}{a.os ? ` · ${a.os}` : ''}{!a.is_online ? ' · offline' : ' · online'}
                     </option>
                   ))}
                 </select>
-                {scannerAgents.length === 0 && (
+                {scannerAgents.length === 0 ? (
                   <span className="cp-field-hint cp-warn">
-                    No scanner agents registered. Deploy a scanner agent first.
+                    No agents registered. <a href="/agents" style={{color:'var(--color-primary-bright)'}}>Install the agent →</a>
+                  </span>
+                ) : (['smb','nfs','local'].includes(selectedType ?? '')) && (
+                  <span className="cp-field-hint">
+                    The agent will connect to this share using its own service account credentials.
+                    File access policies are enforced at the host level.
                   </span>
                 )}
+              </div>
+            )}
+
+            {/* Auto-assign online agent for SMB/NFS if none selected */}
+            {(['smb','nfs'].includes(selectedType ?? '')) && !agentId && scannerAgents.length > 0 && (
+              <div className="cp-field-hint" style={{marginTop: -8}}>
+                <button
+                  type="button"
+                  style={{color:'var(--color-secondary)',background:'none',border:'none',cursor:'pointer',fontSize:12,padding:0}}
+                  onClick={() => {
+                    const online = scannerAgents.find((a: any) => a.is_online)
+                    if (online) setAgentId(online.id)
+                  }}
+                >
+                  ⚡ Auto-assign nearest online agent
+                </button>
               </div>
             )}
 

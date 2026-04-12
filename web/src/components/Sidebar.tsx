@@ -1,9 +1,10 @@
 /**
- * Sidebar — M3 Navigation Rail redesign.
+ * Sidebar - M3 Navigation Rail redesign.
  * 80px width, icon + label always visible,
  * 56×32px pill active indicator behind icon.
  */
 // @ts-nocheck
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Network, LayoutGrid,
@@ -17,17 +18,19 @@ import './Sidebar.css'
 
 // ── Theme toggle hook ──────────────────────────────────────────────────────────
 function useTheme() {
-  const current = document.documentElement.getAttribute('data-theme') ?? 'dark'
+  // Must use useState so toggling triggers a React re-render (DOM attr change alone won't)
+  const [theme, setTheme] = useState<string>(
+    () => document.documentElement.getAttribute('data-theme') ?? 'dark'
+  )
 
   const toggle = () => {
-    const next = current === 'dark' ? 'light' : 'dark'
+    const next = theme === 'dark' ? 'light' : 'dark'
     document.documentElement.setAttribute('data-theme', next)
     localStorage.setItem('dgraph-theme', next)
-    // Force re-render — simple event dispatch
-    window.dispatchEvent(new CustomEvent('dgraph-theme-change', { detail: next }))
+    setTheme(next)
   }
 
-  return { theme: current, toggle }
+  return { theme, toggle }
 }
 
 // ── Nav items ──────────────────────────────────────────────────────────────────
