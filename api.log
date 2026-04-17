@@ -1,5 +1,0 @@
-INFO:     127.0.0.1:54650 - "POST /api/agent/heartbeat HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54654 - "GET /api/health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54668 - "POST /api/agent/heartbeat HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54668 - "GET /api/agent/config HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54670 - "POST /api/scanner/sync HTTP/1.1" 200 OK
